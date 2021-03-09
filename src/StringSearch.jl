@@ -38,10 +38,9 @@ end
 
 function loadu_si128(p::Ptr{UInt8})
     Base.llvmcall("""
-    %2 = inttoptr i64 %0 to <2 x i64>*
-    %3 = load <2 x i64>, <2 x i64>* %2, align 1
-    %4 = bitcast <2 x i64> %3 to <16 x i8>
-    ret <16 x i8> %4
+    %2 = inttoptr i64 %0 to <16 x i8>*
+    %3 = load <16 x i8>, <16 x i8>* %2, align 1
+    ret <16 x i8> %3
     """, m128i, Tuple{Ptr{UInt8}}, p)
 end
 
@@ -62,11 +61,10 @@ end
 
 function movemask_epi8(x::m128i)
     Base.llvmcall("""
-    %2 = bitcast <16 x i8> %0 to <16 x i8>
-    %3 = icmp slt <16 x i8> %2, zeroinitializer
-    %4 = bitcast <16 x i1> %3 to i16
-    %5 = zext i16 %4 to i32
-    ret i32 %5
+    %2 = icmp slt <16 x i8> %0, zeroinitializer
+    %3 = bitcast <16 x i1> %2 to i16
+    %4 = zext i16 %3 to i32
+    ret i32 %4
     """, Int32, Tuple{m128i}, x)
 end
 

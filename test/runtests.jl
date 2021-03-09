@@ -14,6 +14,7 @@ const SS = StringSearch
     @test SS.findfirst("abracadabra", b) == 1:11
     @test SS.findnext("abra", b, 1) == 1:4
     @test SS.findnext("abra", b, 2) == 8:11
+
     b = "abracadabraabracadabra"  # 22 bytes
     @test SS.findfirst("", b) == 1:0
     @test SS.findfirst("a", b) == 1:1
@@ -24,4 +25,11 @@ const SS = StringSearch
     @test SS.findfirst("abracadabra", b) == 1:11
     @test SS.findnext("abra", b, 1) == 1:4
     @test SS.findnext("abra", b, 2) == 8:11
+
+    b = """
+    Julia is a high-level, high-performance dynamic language for technical computing. The main homepage for Julia can be found at julialang.org. This is the GitHub repository of Julia source code, including instructions for compiling and installing Julia, below.
+    """
+    for a in ["a", ".", "be", "language", "code", "Julia", "installing"]
+        @test SS.findfirst(a, b) == Base.findfirst(a, b)
+    end
 end

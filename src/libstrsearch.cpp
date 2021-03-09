@@ -36,7 +36,7 @@ ssize_t sse2_search(const uint8_t *a, const ssize_t m, const uint8_t *b, const s
 }
 
 extern "C"
-ssize_t avx_search(const uint8_t *a, const ssize_t m, const uint8_t *b, const ssize_t n)
+ssize_t avx2_search(const uint8_t *a, const ssize_t m, const uint8_t *b, const ssize_t n)
 {
     if (m == 0)
         return 0;

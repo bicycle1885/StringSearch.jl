@@ -27,8 +27,8 @@ const libstrsearch = joinpath(@__DIR__, "libstrsearch.so")
 sse2_search_cxx(a, b) =
     GC.@preserve a b Int(ccall((:sse2_search, libstrsearch), Cssize_t, (Ptr{UInt8}, Cssize_t, Ptr{UInt8}, Cssize_t), a, sizeof(a), b, sizeof(b)))
 
-avx_search_cxx(a, b) =
-    GC.@preserve a b Int(ccall((:avx_search, libstrsearch), Cssize_t, (Ptr{UInt8}, Cssize_t, Ptr{UInt8}, Cssize_t), a, sizeof(a), b, sizeof(b)))
+avx2_search_cxx(a, b) =
+    GC.@preserve a b Int(ccall((:avx2_search, libstrsearch), Cssize_t, (Ptr{UInt8}, Cssize_t, Ptr{UInt8}, Cssize_t), a, sizeof(a), b, sizeof(b)))
 
 function sse2_search_julia(a, b)
     m = sizeof(a)

@@ -104,15 +104,15 @@ end
 memcmp(p, q, n) = ccall(:memcmp, Cint, (Ptr{UInt8}, Ptr{UInt8}, Csize_t), p, q, n)
 memchr(p, c, n) = ccall(:memchr, Ptr{UInt8}, (Ptr{UInt8}, Cint, Csize_t), p, c, n)
 
-const m128i = NTuple{16,VecElement{UInt8}}
-const m256i = NTuple{32,VecElement{UInt8}}
+const U8x16 = NTuple{16,VecElement{UInt8}}
+const U8x32 = NTuple{32,VecElement{UInt8}}
 
 function set1_epi8_128(x::UInt8)
     Base.llvmcall("""
     %2 = insertelement <16 x i8> undef, i8 %0, i32 0
     %3 = shufflevector <16 x i8> %2, <16 x i8> undef, <16 x i32> zeroinitializer
     ret <16 x i8> %3
-    """, m128i, Tuple{UInt8}, x)
+    """, U8x16, Tuple{UInt8}, x)
 end
 
 function set1_epi8_256(x::UInt8)
@@ -120,7 +120,7 @@ function set1_epi8_256(x::UInt8)
     %2 = insertelement <32 x i8> undef, i8 %0, i32 0
     %3 = shufflevector <32 x i8> %2, <32 x i8> undef, <32 x i32> zeroinitializer
     ret <32 x i8> %3
-    """, m256i, Tuple{UInt8}, x)
+    """, U8x32, Tuple{UInt8}, x)
 end
 
 function loadu_si128(p::Ptr{UInt8})
@@ -128,7 +128,7 @@ function loadu_si128(p::Ptr{UInt8})
     %2 = inttoptr i64 %0 to <16 x i8>*
     %3 = load <16 x i8>, <16 x i8>* %2, align 1
     ret <16 x i8> %3
-    """, m128i, Tuple{Ptr{UInt8}}, p)
+    """, U8x16, Tuple{Ptr{UInt8}}, p)
 end
 
 function loadu_si256(p::Ptr{UInt8})
@@ -136,58 +136,58 @@ function loadu_si256(p::Ptr{UInt8})
     %2 = inttoptr i64 %0 to <32 x i8>*
     %3 = load <32 x i8>, <32 x i8>* %2, align 1
     ret <32 x i8> %3
-    """, m256i, Tuple{Ptr{UInt8}}, p)
+    """, U8x32, Tuple{Ptr{UInt8}}, p)
 end
 
-function cmpeq_epi8(x::m128i, y::m128i)
+function cmpeq_epi8(x::U8x16, y::U8x16)
     Base.llvmcall("""
     %3 = icmp eq <16 x i8> %0, %1
     %4 = sext <16 x i1> %3 to <16 x i8>
     ret <16 x i8> %4
-    """, m128i, Tuple{m128i, m128i}, x, y)
+    """, U8x16, Tuple{U8x16, U8x16}, x, y)
 end
 
-function cmpeq_epi8(x::m256i, y::m256i)
+function cmpeq_epi8(x::U8x32, y::U8x32)
     Base.llvmcall("""
     %3 = icmp eq <32 x i8> %0, %1
     %4 = sext <32 x i1> %3 to <32 x i8>
     ret <32 x i8> %4
-    """, m256i, Tuple{m256i, m256i}, x, y)
+    """, U8x32, Tuple{U8x32, U8x32}, x, y)
 end
 
-function and_si128(x::m128i, y::m128i)
+function and_si128(x::U8x16, y::U8x16)
     Base.llvmcall("""
     %3 = and <16 x i8> %1, %0
     ret <16 x i8> %3
-    """, m128i, Tuple{m128i, m128i}, x, y)
+    """, U8x16, Tuple{U8x16, U8x16}, x, y)
 end
 
-function and_si256(x::m256i, y::m256i)
+function and_si256(x::U8x32, y::U8x32)
     Base.llvmcall("""
     %3 = and <32 x i8> %1, %0
     ret <32 x i8> %3
-    """, m256i, Tuple{m256i, m256i}, x, y)
+    """, U8x32, Tuple{U8x32, U8x32}, x, y)
 end
 
-function movemask_epi8(x::m128i)
+function movemask_epi8(x::U8x16)
     Base.llvmcall("""
     %2 = icmp slt <16 x i8> %0, zeroinitializer
     %3 = bitcast <16 x i1> %2 to i16
     %4 = zext i16 %3 to i64
     ret i64 %4
-    """, Int64, Tuple{m128i}, x)
+    """, Int64, Tuple{U8x16}, x)
 end
 
-function movemask_epi8(x::m256i)
+function movemask_epi8(x::U8x32)
     Base.llvmcall("""
     %2 = icmp slt <32 x i8> %0, zeroinitializer
     %3 = bitcast <32 x i1> %2 to i32
     %4 = zext i32 %3 to i64
     ret i64 %4
-    """, Int64, Tuple{m256i}, x)
+    """, Int64, Tuple{U8x32}, x)
 end
 
 # For debugging
-v2s(x::Union{m128i,m256i}) = String([Char(b.value) for b in x])
+v2s(x::Union{U8x16,U8x32}) = String([Char(b.value) for b in x])
 
 end

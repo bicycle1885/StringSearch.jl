@@ -13,9 +13,8 @@ end
 function findnext(a::Str, b::Str, i::Int)
     if i > lastindex(b) + 1
         return nothing
-    elseif i < firstindex(b)
-        i = firstindex(b)
     end
+    i = max(i, firstindex(b))
     @static if supports_avx2()
         offset = avx2_search_julia(a, b, i-1)
     else

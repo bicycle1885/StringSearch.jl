@@ -3,10 +3,20 @@ using StringSearch
 const B = Base
 const S = StringSearch
 
+b = "abracadabra"
+println("findfirst for a very short string ($(sizeof(b)) bytes)")
+for a in ["a", "cad", "dabra"]
+    @assert B.findfirst(a, b) == S.findfirst(a, b)
+    println("a = $(repr(a)) (result: $(S.findfirst(a, b)))")
+    print("  B"); @btime B.findfirst($a, $b)
+    print("  S"); @btime S.findfirst($a, $b)
+end
+println()
+
 b = """
 Julia is a high-level, high-performance dynamic language for technical computing. The main homepage for Julia can be found at julialang.org. This is the GitHub repository of Julia source code, including instructions for compiling and installing Julia, below.
 """
-println("findfirst for short a string ($(sizeof(b)) bytes)")
+println("findfirst for a short string ($(sizeof(b)) bytes)")
 for a in ["a", ".", "be", "language", "code", "Julia", "installing"]
     @assert B.findfirst(a, b) == S.findfirst(a, b)
     println("a = $(repr(a)) (result: $(S.findfirst(a, b)))")

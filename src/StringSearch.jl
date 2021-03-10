@@ -46,6 +46,8 @@ function sse2_search_julia(a, b, o)
     p = pointer(b) + o
     if m == 0
         return 0
+    elseif m > n
+        return -1
     elseif m == 1
         q = memchr(p, codeunit(a, 1), n)
         return q == C_NULL ? -1 : Int(q - p)
@@ -81,6 +83,8 @@ function avx2_search_julia(a, b, o)
     p = pointer(b) + o
     if m == 0
         return 0
+    elseif m > n
+        return -1
     elseif m == 1
         q = memchr(p, codeunit(a, 1), n)
         return q == C_NULL ? -1 : Int(q - p)

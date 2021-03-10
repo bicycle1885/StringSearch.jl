@@ -8,7 +8,7 @@ function findnext(a::Str, b::Str, i::Int)
     elseif i < firstindex(b)
         i = firstindex(b)
     end
-    offset = sse2_search_julia(a, b, i-1)
+    offset = avx2_search_julia(a, b, i-1)
     if offset < 0
         return nothing
     else
@@ -39,7 +39,7 @@ function sse2_search_julia(a, b, o)
         return q == C_NULL ? -1 : Int(q - p)
     end
     F = set1_epi8_128(codeunit(a, 1))
-    L = set1_epi8_128(codeunit(a, sizeof(a)))
+    L = set1_epi8_128(codeunit(a, m))
     i = 0
     while i < n - m - 14
         S = loadu_si128(p + i)
@@ -50,9 +50,44 @@ function sse2_search_julia(a, b, o)
             if memcmp(pointer(a) + 1, p + i + offset + 1, m - 2) == 0
                 return i + offset
             end
-            mask &= mask - 1
+            mask &= mask - Int32(1)
         end
         i += 16
+    end
+    while i < n - m + 1
+        if memcmp(pointer(a), p + i, m) == 0
+            return i
+        end
+        i += 1
+    end
+    return -1
+end
+
+function avx2_search_julia(a, b, o)
+    m = ncodeunits(a)
+    n = ncodeunits(b) - o
+    p = pointer(b) + o
+    if m == 0
+        return 0
+    elseif m == 1
+        q = memchr(p, codeunit(a, 1), n)
+        return q == C_NULL ? -1 : Int(q - p)
+    end
+    F = set1_epi8_256(codeunit(a, 1))
+    L = set1_epi8_256(codeunit(a, m))
+    i = 0
+    while i < n - m - 30
+        S = loadu_si256(p + i)
+        T = loadu_si256(p + i + m - 1)
+        mask = movemask_epi8(and_si256(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
+        while mask ≠ 0
+            offset = trailing_zeros(mask)
+            if memcmp(pointer(a) + 1, p + i + offset + 1, m - 2) == 0
+                return i + offset
+            end
+            mask &= mask - Int32(1)
+        end
+        i += 32
     end
     while i < n - m + 1
         if memcmp(pointer(a), p + i, m) == 0
@@ -70,6 +105,7 @@ memcmp(p, q, n) = ccall(:memcmp, Cint, (Ptr{UInt8}, Ptr{UInt8}, Csize_t), p, q, 
 memchr(p, c, n) = ccall(:memchr, Ptr{UInt8}, (Ptr{UInt8}, Cint, Csize_t), p, c, n)
 
 const m128i = NTuple{16,VecElement{UInt8}}
+const m256i = NTuple{32,VecElement{UInt8}}
 
 function set1_epi8_128(x::UInt8)
     Base.llvmcall("""
@@ -77,6 +113,14 @@ function set1_epi8_128(x::UInt8)
     %3 = shufflevector <16 x i8> %2, <16 x i8> undef, <16 x i32> zeroinitializer
     ret <16 x i8> %3
     """, m128i, Tuple{UInt8}, x)
+end
+
+function set1_epi8_256(x::UInt8)
+    Base.llvmcall("""
+    %2 = insertelement <32 x i8> undef, i8 %0, i32 0
+    %3 = shufflevector <32 x i8> %2, <32 x i8> undef, <32 x i32> zeroinitializer
+    ret <32 x i8> %3
+    """, m256i, Tuple{UInt8}, x)
 end
 
 function loadu_si128(p::Ptr{UInt8})
@@ -87,6 +131,14 @@ function loadu_si128(p::Ptr{UInt8})
     """, m128i, Tuple{Ptr{UInt8}}, p)
 end
 
+function loadu_si256(p::Ptr{UInt8})
+    Base.llvmcall("""
+    %2 = inttoptr i64 %0 to <32 x i8>*
+    %3 = load <32 x i8>, <32 x i8>* %2, align 1
+    ret <32 x i8> %3
+    """, m256i, Tuple{Ptr{UInt8}}, p)
+end
+
 function cmpeq_epi8(x::m128i, y::m128i)
     Base.llvmcall("""
     %3 = icmp eq <16 x i8> %0, %1
@@ -95,11 +147,26 @@ function cmpeq_epi8(x::m128i, y::m128i)
     """, m128i, Tuple{m128i, m128i}, x, y)
 end
 
+function cmpeq_epi8(x::m256i, y::m256i)
+    Base.llvmcall("""
+    %3 = icmp eq <32 x i8> %0, %1
+    %4 = sext <32 x i1> %3 to <32 x i8>
+    ret <32 x i8> %4
+    """, m256i, Tuple{m256i, m256i}, x, y)
+end
+
 function and_si128(x::m128i, y::m128i)
     Base.llvmcall("""
     %3 = and <16 x i8> %1, %0
     ret <16 x i8> %3
     """, m128i, Tuple{m128i, m128i}, x, y)
+end
+
+function and_si256(x::m256i, y::m256i)
+    Base.llvmcall("""
+    %3 = and <32 x i8> %1, %0
+    ret <32 x i8> %3
+    """, m256i, Tuple{m256i, m256i}, x, y)
 end
 
 function movemask_epi8(x::m128i)
@@ -111,7 +178,15 @@ function movemask_epi8(x::m128i)
     """, Int32, Tuple{m128i}, x)
 end
 
+function movemask_epi8(x::m256i)
+    Base.llvmcall("""
+    %2 = icmp slt <32 x i8> %0, zeroinitializer
+    %3 = bitcast <32 x i1> %2 to i32
+    ret i32 %3
+    """, Int32, Tuple{m256i}, x)
+end
+
 # For debugging
-v2s(x::m128i) = String([Char(b.value) for b in x])
+v2s(x::Union{m128i,m256i}) = String([Char(b.value) for b in x])
 
 end

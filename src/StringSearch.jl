@@ -50,7 +50,7 @@ function sse2_search_julia(a, b, o)
             if memcmp(pointer(a) + 1, p + i + offset + 1, m - 2) == 0
                 return i + offset
             end
-            mask &= mask - Int32(1)
+            mask &= mask - 1
         end
         i += 16
     end
@@ -85,7 +85,7 @@ function avx2_search_julia(a, b, o)
             if memcmp(pointer(a) + 1, p + i + offset + 1, m - 2) == 0
                 return i + offset
             end
-            mask &= mask - Int32(1)
+            mask &= mask - 1
         end
         i += 32
     end
@@ -173,17 +173,18 @@ function movemask_epi8(x::m128i)
     Base.llvmcall("""
     %2 = icmp slt <16 x i8> %0, zeroinitializer
     %3 = bitcast <16 x i1> %2 to i16
-    %4 = zext i16 %3 to i32
-    ret i32 %4
-    """, Int32, Tuple{m128i}, x)
+    %4 = zext i16 %3 to i64
+    ret i64 %4
+    """, Int64, Tuple{m128i}, x)
 end
 
 function movemask_epi8(x::m256i)
     Base.llvmcall("""
     %2 = icmp slt <32 x i8> %0, zeroinitializer
     %3 = bitcast <32 x i1> %2 to i32
-    ret i32 %3
-    """, Int32, Tuple{m256i}, x)
+    %4 = zext i32 %3 to i64
+    ret i64 %4
+    """, Int64, Tuple{m256i}, x)
 end
 
 # For debugging

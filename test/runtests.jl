@@ -1,4 +1,4 @@
-using StringSearch
+using StringSearch: StringSearch, findfirst, findnext
 using Test
 
 const SS = StringSearch
@@ -53,4 +53,44 @@ const SS = StringSearch
     @test SS.findnext("", "a", 1) === 1:0
     @test SS.findnext("", "a", 2) === 2:1
     @test SS.findnext("", "a", 3) === nothing
+end
+
+@testset "Base tests" begin
+    # Taken from: https://github.com/JuliaLang/julia/blob/b4c79e76fb699cf67d0e6b14ecfa75b1aaca923f/test/strings/search.jl
+    # License is MIT: https://julialang.org/license
+
+    # string forward search with a two-char string literal
+    @test findfirst("xx", "foo,bar,baz") == nothing
+    @test findfirst("fo", "foo,bar,baz") == 1:2
+    @test findnext("fo", "foo,bar,baz", 3) == nothing
+    @test findfirst("oo", "foo,bar,baz") == 2:3
+    @test findnext("oo", "foo,bar,baz", 4) == nothing
+    @test findfirst("o,", "foo,bar,baz") == 3:4
+    @test findnext("o,", "foo,bar,baz", 5) == nothing
+    @test findfirst(",b", "foo,bar,baz") == 4:5
+    @test findnext(",b", "foo,bar,baz", 6) == 8:9
+    @test findnext(",b", "foo,bar,baz", 10) == nothing
+    @test findfirst("az", "foo,bar,baz") == 10:11
+    @test findnext("az", "foo,bar,baz", 12) == nothing
+
+    # issue #9365
+    # string forward search with a two-char UTF-8 (2 byte) string literal
+    @test findfirst("éé", "ééé") == 1:3
+    @test findnext("éé", "ééé", 1) == 1:3
+    # string forward search with a two-char UTF-8 (3 byte) string literal
+    @test findfirst("€€", "€€€") == 1:4
+    @test findnext("€€", "€€€", 1) == 1:4
+    # string forward search with a two-char UTF-8 (4 byte) string literal
+    @test findfirst("\U1f596\U1f596", "\U1f596\U1f596\U1f596") == 1:5
+    @test findnext("\U1f596\U1f596", "\U1f596\U1f596\U1f596", 1) == 1:5
+
+    # string forward search with a two-char UTF-8 (2 byte) string literal
+    @test findfirst("éé", "éé") == 1:3
+    @test findnext("éé", "éé", 1) == 1:3
+    # string forward search with a two-char UTF-8 (3 byte) string literal
+    @test findfirst("€€", "€€") == 1:4
+    @test findnext("€€", "€€", 1) == 1:4
+    # string forward search with a two-char UTF-8 (4 byte) string literal
+    @test findfirst("\U1f596\U1f596", "\U1f596\U1f596") == 1:5
+    @test findnext("\U1f596\U1f596", "\U1f596\U1f596", 1) == 1:5
 end

@@ -31,12 +31,17 @@ using Test
         @test findfirst(a, b) == Base.findfirst(a, b)
     end
 
-    @test findfirst("Julia", "Julia言語") === 1:5
-    @test findnext("Julia", "Julia言語", 2) === nothing
-    @test findfirst("言語", "Julia言語") === 6:9
-    @test findnext("言語", "Julia言語", 2) === 6:9
-    @test findnext("言語", "Julia言語", 6) === 6:9
-    @test findnext("言語", "Julia言語", 7) === nothing
+    b = "Julia言語"
+    @test findfirst("Julia", b) === 1:5
+    @test findnext("Julia", b, 2) === nothing
+    @test findfirst("言語", b) === 6:9
+    @test findnext("言語", b, 2) === 6:9
+    @test findnext("言語", b, 6) === 6:9
+    @test findnext("言語", b, 7) === nothing
+
+    @test findfirst("a", "") === nothing
+    @test findfirst("aa", "a") === nothing
+    @test findfirst("aaa", "aa") === nothing
 
     @test findfirst("", "") === 1:0
     @test findnext("", "", -1) === 1:0

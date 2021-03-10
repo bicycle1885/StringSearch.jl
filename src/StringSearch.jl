@@ -38,8 +38,8 @@ function sse2_search_julia(a, b, o)
         q = memchr(p, codeunit(a, 1), n)
         return q == C_NULL ? -1 : Int(q - p)
     end
-    F = set1_epi8(codeunit(a, 1))
-    L = set1_epi8(codeunit(a, sizeof(a)))
+    F = set1_epi8_128(codeunit(a, 1))
+    L = set1_epi8_128(codeunit(a, sizeof(a)))
     i = 0
     while i < n - m - 14
         S = loadu_si128(p + i)
@@ -71,10 +71,7 @@ memchr(p, c, n) = ccall(:memchr, Ptr{UInt8}, (Ptr{UInt8}, Cint, Csize_t), p, c, 
 
 const m128i = NTuple{16,VecElement{UInt8}}
 
-# For debugging
-v2s(x::m128i) = String([Char(b.value) for b in x])
-
-function set1_epi8(x::UInt8)
+function set1_epi8_128(x::UInt8)
     Base.llvmcall("""
     %2 = insertelement <16 x i8> undef, i8 %0, i32 0
     %3 = shufflevector <16 x i8> %2, <16 x i8> undef, <16 x i32> zeroinitializer
@@ -113,5 +110,8 @@ function movemask_epi8(x::m128i)
     ret i32 %4
     """, Int32, Tuple{m128i}, x)
 end
+
+# For debugging
+v2s(x::m128i) = String([Char(b.value) for b in x])
 
 end

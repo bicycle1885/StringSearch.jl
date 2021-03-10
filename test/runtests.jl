@@ -51,6 +51,9 @@ using Test
     @test findnext("", "a", 1) === 1:0
     @test findnext("", "a", 2) === 2:1
     @test findnext("", "a", 3) === nothing
+
+    @test findnext("≠", "≠    ", 2) === nothing
+    @test findnext(" ≠", "≠    ", 2) === nothing
 end
 
 @testset "Base tests" begin

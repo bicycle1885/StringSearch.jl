@@ -33,6 +33,13 @@ const SS = StringSearch
         @test SS.findfirst(a, b) == Base.findfirst(a, b)
     end
 
+    @test SS.findfirst("Julia", "Julia言語") === 1:5
+    @test SS.findnext("Julia", "Julia言語", 2) === nothing
+    @test SS.findfirst("言語", "Julia言語") === 6:9
+    @test SS.findnext("言語", "Julia言語", 2) === 6:9
+    @test SS.findnext("言語", "Julia言語", 6) === 6:9
+    @test SS.findnext("言語", "Julia言語", 7) === nothing
+
     @test SS.findfirst("", "") === 1:0
     @test SS.findnext("", "", -1) === 1:0
     @test SS.findnext("", "", 0) === 1:0

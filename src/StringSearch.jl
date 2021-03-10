@@ -12,7 +12,7 @@ function findnext(a::Str, b::Str, i::Int)
     if offset < 0
         return nothing
     else
-        return i+offset:i+offset-1+ncodeunits(a)
+        return i+offset:i+offset-1+lastindex(a)
     end
 end
 

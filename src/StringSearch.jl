@@ -2,13 +2,25 @@ module StringSearch
 
 const Str = Union{String,SubString{String}}
 
+function supports_avx2()
+    if Sys.islinux()
+        success(pipeline(`cat /proc/cpuinfo`, `grep -c avx2`))
+    else
+        false
+    end
+end
+
 function findnext(a::Str, b::Str, i::Int)
     if i > lastindex(b) + 1
         return nothing
     elseif i < firstindex(b)
         i = firstindex(b)
     end
-    offset = avx2_search_julia(a, b, i-1)
+    @static if supports_avx2()
+        offset = avx2_search_julia(a, b, i-1)
+    else
+        offset = sse2_search_julia(a, b, i-1)
+    end
     if offset < 0
         return nothing
     else

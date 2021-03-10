@@ -7,10 +7,8 @@ function findnext(a::Str, b::Str, i::Int)
         return nothing
     elseif i < firstindex(b)
         i = firstindex(b)
-    elseif i ≠ thisind(b, i)
-        i = nextind(b, i)
     end
-    offset = sse2_search_julia(a, @view b[i:end])
+    offset = sse2_search_julia(a, b, i-1)
     if offset < 0
         return nothing
     else
@@ -24,31 +22,32 @@ findfirst(a::Str, b::Str) = findnext(a, b, firstindex(b))
 
 const libstrsearch = joinpath(@__DIR__, "libstrsearch.so")
 
-sse2_search_cxx(a, b) =
-    GC.@preserve a b Int(ccall((:sse2_search, libstrsearch), Cssize_t, (Ptr{UInt8}, Cssize_t, Ptr{UInt8}, Cssize_t), a, sizeof(a), b, sizeof(b)))
+sse2_search_cxx(a, b, o) =
+    GC.@preserve a b Int(ccall((:sse2_search, libstrsearch), Cssize_t, (Ptr{UInt8}, Cssize_t, Ptr{UInt8}, Cssize_t), a, ncodeunits(a), pointer(b) + o, ncodeunits(b) - o))
 
-avx2_search_cxx(a, b) =
-    GC.@preserve a b Int(ccall((:avx2_search, libstrsearch), Cssize_t, (Ptr{UInt8}, Cssize_t, Ptr{UInt8}, Cssize_t), a, sizeof(a), b, sizeof(b)))
+avx2_search_cxx(a, b, o) =
+    GC.@preserve a b Int(ccall((:avx2_search, libstrsearch), Cssize_t, (Ptr{UInt8}, Cssize_t, Ptr{UInt8}, Cssize_t), a, ncodeunits(a), pointer(b) + o, ncodeunits(b) - o))
 
-function sse2_search_julia(a, b)
-    m = sizeof(a)
-    n = sizeof(b)
+function sse2_search_julia(a, b, o)
+    m = ncodeunits(a)
+    n = ncodeunits(b) - o
+    p = pointer(b) + o
     if m == 0
         return 0
     elseif m == 1
-        p = memchr(pointer(b), codeunit(a, 1), n)
-        return p == C_NULL ? -1 : Int(p - pointer(b))
+        q = memchr(p, codeunit(a, 1), n)
+        return q == C_NULL ? -1 : Int(q - p)
     end
     F = set1_epi8(codeunit(a, 1))
     L = set1_epi8(codeunit(a, sizeof(a)))
     i = 0
     while i < n - m - 14
-        S = loadu_si128(pointer(b) + i)
-        T = loadu_si128(pointer(b) + i + m - 1)
+        S = loadu_si128(p + i)
+        T = loadu_si128(p + i + m - 1)
         mask = movemask_epi8(and_si128(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
         while mask ≠ 0
             offset = trailing_zeros(mask)
-            if memcmp(pointer(a) + 1, pointer(b) + i + offset + 1, m - 2) == 0
+            if memcmp(pointer(a) + 1, p + i + offset + 1, m - 2) == 0
                 return i + offset
             end
             mask &= mask - 1
@@ -56,7 +55,7 @@ function sse2_search_julia(a, b)
         i += 16
     end
     while i < n - m + 1
-        if memcmp(pointer(a), pointer(b) + i, m) == 0
+        if memcmp(pointer(a), p + i, m) == 0
             return i
         end
         i += 1

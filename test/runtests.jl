@@ -32,4 +32,18 @@ const SS = StringSearch
     for a in ["a", ".", "be", "language", "code", "Julia", "installing"]
         @test SS.findfirst(a, b) == Base.findfirst(a, b)
     end
+
+    @test SS.findfirst("", "") === 1:0
+    @test SS.findnext("", "", -1) === 1:0
+    @test SS.findnext("", "", 0) === 1:0
+    @test SS.findnext("", "", 1) === 1:0
+    @test SS.findnext("", "", 2) === nothing
+    @test SS.findnext("", "", 3) === nothing
+
+    @test SS.findfirst("", "a") === 1:0
+    @test SS.findnext("", "a", -1) === 1:0
+    @test SS.findnext("", "a", 0) === 1:0
+    @test SS.findnext("", "a", 1) === 1:0
+    @test SS.findnext("", "a", 2) === 2:1
+    @test SS.findnext("", "a", 3) === nothing
 end

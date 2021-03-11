@@ -48,6 +48,13 @@ function benchmark_countall(a, b)
     report(a, ss, base, countall(B.findnext, a, b))
 end
 
+S.AVX2[] = get(ENV, "AVX2", "1") ≠ "0"
+if S.use_avx2()
+    @info "AVX2 is active"
+else
+    @info "AVX2 is not active"
+end
+
 @printf "%18s  %8s  %8s  %8s  %8s\n" "Query" "SS" "Base" "Ratio" "Result"
 
 b = "abracadabra"

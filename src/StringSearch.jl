@@ -1,7 +1,7 @@
 module StringSearch
 
 const Str = Union{String,SubString{String}}
-const AVX2 = Ref{Bool}(get(ENV, "AVX2", "1") ≠ "0")
+const AVX2 = Ref(true)
 
 use_avx2() = AVX2[]
 

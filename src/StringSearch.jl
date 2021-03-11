@@ -16,15 +16,11 @@ function findnext(a::Str, b::Str, i::Int)
     end
     i = max(i, firstindex(b))
     @static if supports_avx2()
-        offset = avx2_search_julia(a, b, i-1)
+        offset = avx2_search_julia(a, b, i - 1)
     else
-        offset = sse2_search_julia(a, b, i-1)
+        offset = sse2_search_julia(a, b, i - 1)
     end
-    if offset < 0
-        return nothing
-    else
-        return i+offset:i+offset-1+lastindex(a)
-    end
+    return offset ≥ 0 ? (offset+1:offset+lastindex(a)) : nothing
 end
 
 findnext(a::Str, b::Str, i::Integer) = findnext(a, b, Int(i))
@@ -39,76 +35,76 @@ sse2_search_cxx(a, b, o) =
 avx2_search_cxx(a, b, o) =
     GC.@preserve a b Int(ccall((:avx2_search, libstrsearch), Cssize_t, (Ptr{UInt8}, Cssize_t, Ptr{UInt8}, Cssize_t), a, ncodeunits(a), pointer(b) + o, ncodeunits(b) - o))
 
-function sse2_search_julia(a, b, o)
+function sse2_search_julia(a, b, k)
     m = ncodeunits(a)
-    n = ncodeunits(b) - o
-    p = pointer(b) + o
+    n = ncodeunits(b) - k
+    p = pointer(b) + k
     if m == 0
-        return 0
+        return k
     elseif m > n
         return -1
     elseif m == 1
-        q = memchr(p, codeunit(a, 1), n)
-        return q == C_NULL ? -1 : Int(q - p)
+        p = memchr(p, codeunit(a, 1), n)
+        return p == C_NULL ? -1 : Int(p - pointer(b))
     end
     F = set1_epi8_128(codeunit(a, 1))
     L = set1_epi8_128(codeunit(a, m))
-    i = 0
-    while i < n - m - 14
-        S = loadu_si128(p + i)
-        T = loadu_si128(p + i + m - 1)
+    b_end = pointer(b) + ncodeunits(b)
+    while p + m - 1 + 15 < b_end
+        S = loadu_si128(p)
+        T = loadu_si128(p + m - 1)
         mask = movemask_epi8(and_si128(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
         while mask ≠ 0
-            offset = trailing_zeros(mask)
-            if memcmp(pointer(a) + 1, p + i + offset + 1, m - 2) == 0
-                return i + offset
+            i = trailing_zeros(mask)
+            if memcmp(pointer(a) + 1, p + i + 1, m - 2) == 0
+                return Int(p + i - pointer(b))
             end
             mask &= mask - 1
         end
-        i += 16
+        p += 16
     end
-    while i < n - m + 1
-        if memcmp(pointer(a), p + i, m) == 0
-            return i
+    while p + m - 1 < b_end
+        if memcmp(pointer(a), p, m) == 0
+            return Int(p - pointer(b))
         end
-        i += 1
+        p += 1
     end
     return -1
 end
 
-function avx2_search_julia(a, b, o)
+function avx2_search_julia(a, b, k)
     m = ncodeunits(a)
-    n = ncodeunits(b) - o
-    p = pointer(b) + o
+    n = ncodeunits(b) - k
+    p = pointer(b) + k
     if m == 0
-        return 0
+        return k
     elseif m > n
         return -1
     elseif m == 1
-        q = memchr(p, codeunit(a, 1), n)
-        return q == C_NULL ? -1 : Int(q - p)
+        p = memchr(p, codeunit(a, 1), n)
+        return p == C_NULL ? -1 : Int(p - pointer(b))
     end
     F = set1_epi8_256(codeunit(a, 1))
     L = set1_epi8_256(codeunit(a, m))
-    i = 0
-    while i < n - m - 30
-        S = loadu_si256(p + i)
-        T = loadu_si256(p + i + m - 1)
+    b_end = pointer(b) + ncodeunits(b)
+    while p + m - 1 + 31 < b_end
+        S = loadu_si256(p)
+        T = loadu_si256(p + m - 1)
         mask = movemask_epi8(and_si256(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
         while mask ≠ 0
-            offset = trailing_zeros(mask)
-            if memcmp(pointer(a) + 1, p + i + offset + 1, m - 2) == 0
-                return i + offset
+            i = trailing_zeros(mask)
+            if memcmp(pointer(a) + 1, p + i + 1, m - 2) == 0
+                return Int(p + i - pointer(b))
             end
             mask &= mask - 1
         end
-        i += 32
+        p += 32
     end
-    while i < n - m + 1
-        if memcmp(pointer(a), p + i, m) == 0
-            return i
+    while p + m - 1 < b_end
+        if memcmp(pointer(a), p, m) == 0
+            return Int(p - pointer(b))
         end
-        i += 1
+        p += 1
     end
     return -1
 end

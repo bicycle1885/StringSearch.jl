@@ -45,10 +45,10 @@ end
 function search_forward(a, b, s)
     m = ncodeunits(a)
     n = ncodeunits(b) - s
-    if m == 0
-        return s
-    elseif m > n
+    if m > n
         return -1
+    elseif m == 0
+        return s
     elseif m == 1
         return search_forward(codeunit(a, 1), b, s)
     end
@@ -147,10 +147,10 @@ end
 function search_backward(a, b, s)
     m = ncodeunits(a)
     n = ncodeunits(b) - s
-    if m == 0
-        return s
-    elseif n < m
+    if n < m
         return -1
+    elseif m == 0
+        return s
     elseif m == 1
         return search_backward(codeunit(a, 1), b, s)
     end

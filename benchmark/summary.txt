@@ -1,0 +1,187 @@
+# -avx2 -backward
+
+             Query        SS      Base     Ratio    Result
+
+# findfirst/last for a very short string (11 bytes)
+               "c"   13.0 ns   15.4 ns     x1.19       5:5
+              "ca"   20.4 ns   39.7 ns     x1.95       5:6
+             "cad"   19.0 ns   42.0 ns     x2.22       5:7
+            "cada"   16.7 ns   42.5 ns     x2.55       5:8
+           "cadab"   14.9 ns   42.2 ns     x2.83       5:9
+          "cadabr"   13.7 ns   42.1 ns     x3.08      5:10
+         "cadabra"   13.5 ns   42.4 ns     x3.13      5:11
+          "namnam"   19.0 ns   37.6 ns     x1.98   nothing
+
+# findfirst/last for a short string (259 bytes)
+               "a"   13.4 ns   14.3 ns     x1.07   250:250
+              "be"   14.3 ns   39.3 ns     x2.75   253:254
+             "the"   14.4 ns   95.1 ns     x6.61   150:152
+            "code"   14.7 ns   65.6 ns     x4.46   188:191
+           "Julia"   14.4 ns   45.2 ns     x3.14   246:250
+        "language"   18.1 ns  101.7 ns     x5.62     49:56
+      "installing"   14.4 ns   52.3 ns     x3.63   235:244
+          "Python"   15.6 ns  127.0 ns     x8.15   nothing
+
+# countall for a long string (3320882 bytes)
+               "."  568.1 μs  661.1 μs     x1.16     28950
+              "if"  242.1 μs    3.4 ms    x13.87      7775
+             "for"  218.1 μs    2.3 ms    x10.53      4496
+          "struct"  221.6 μs    1.6 ms     x7.11       825
+        "function"  226.9 μs    1.4 ms     x6.23      4620
+      "baremodule"  114.6 μs  955.9 μs     x8.34        16
+     "abracadabra"  141.1 μs  843.7 μs     x5.98         0
+"https://julialang.org/license"  135.0 μs  638.7 μs     x4.73       186
+
+# countall for a low-complexity string (248956422 bytes)
+               "A"  588.3 ms  836.9 ms     x1.42  67070277
+             "AAA"  216.0 ms  947.2 ms     x4.39   8516543
+            "TATA"  107.5 ms  566.2 ms     x5.27   1263092
+          "GAATTC"   76.6 ms  458.3 ms     x5.98     67141
+       "CGTACGTAC"   87.4 ms  484.0 ms     x5.54        14
+     "GTTTTCCCCTC"   76.6 ms  198.7 ms     x2.59       131
+   "CCCCCCCCCCCCC"   87.2 ms   97.6 ms     x1.12       246
+"XXXXXXXXXXXXXXXX"   14.3 ms   32.6 ms     x2.28         0
+
+# -noavx2 -backward
+
+             Query        SS      Base     Ratio    Result
+
+# findfirst/last for a very short string (11 bytes)
+               "c"   13.4 ns   17.1 ns     x1.27       5:5
+              "ca"   20.3 ns   38.2 ns     x1.88       5:6
+             "cad"   18.8 ns   41.0 ns     x2.18       5:7
+            "cada"   18.9 ns   41.8 ns     x2.22       5:8
+           "cadab"   17.1 ns   41.5 ns     x2.43       5:9
+          "cadabr"   16.0 ns   40.8 ns     x2.55      5:10
+         "cadabra"   13.8 ns   40.9 ns     x2.97      5:11
+          "namnam"   22.8 ns   36.4 ns     x1.59   nothing
+
+# findfirst/last for a short string (259 bytes)
+               "a"   13.4 ns   14.2 ns     x1.06   250:250
+              "be"   14.3 ns   37.8 ns     x2.64   253:254
+             "the"   17.9 ns   95.1 ns     x5.32   150:152
+            "code"   16.3 ns   64.7 ns     x3.96   188:191
+           "Julia"   14.3 ns   44.1 ns     x3.08   246:250
+        "language"   24.1 ns  102.6 ns     x4.26     49:56
+      "installing"   14.4 ns   51.1 ns     x3.55   235:244
+          "Python"   23.4 ns  127.6 ns     x5.45   nothing
+
+# countall for a long string (3320882 bytes)
+               "."  591.6 μs  668.7 μs     x1.13     28950
+              "if"  355.9 μs    3.3 ms     x9.37      7775
+             "for"  326.6 μs    2.3 ms     x6.99      4496
+          "struct"  330.3 μs    1.6 ms     x4.74       825
+        "function"  336.2 μs    1.4 ms     x4.23      4620
+      "baremodule"  216.3 μs  949.9 μs     x4.39        16
+     "abracadabra"  257.4 μs  838.5 μs     x3.26         0
+"https://julialang.org/license"  241.8 μs  634.9 μs     x2.63       186
+
+# countall for a low-complexity string (248956422 bytes)
+               "A"  583.3 ms  793.5 ms     x1.36  67070277
+             "AAA"  263.9 ms  947.6 ms     x3.59   8516543
+            "TATA"  151.4 ms  562.8 ms     x3.72   1263092
+          "GAATTC"  108.4 ms  459.2 ms     x4.24     67141
+       "CGTACGTAC"  116.8 ms  477.8 ms     x4.09        14
+     "GTTTTCCCCTC"  112.1 ms  197.7 ms     x1.76       131
+   "CCCCCCCCCCCCC"  113.9 ms  100.9 ms     x0.89       246
+"XXXXXXXXXXXXXXXX"   18.8 ms   32.7 ms     x1.73         0
+
+# -avx2 -forward
+
+             Query        SS      Base     Ratio    Result
+
+# findfirst/last for a very short string (11 bytes)
+               "c"    6.1 ns   18.5 ns     x3.02       5:5
+              "ca"   15.7 ns   27.8 ns     x1.78       5:6
+             "cad"   15.6 ns   32.0 ns     x2.05       5:7
+            "cada"   16.3 ns   32.0 ns     x1.96       5:8
+           "cadab"   16.5 ns   33.8 ns     x2.05       5:9
+          "cadabr"   18.6 ns   34.3 ns     x1.85      5:10
+         "cadabra"   16.5 ns   34.8 ns     x2.11      5:11
+          "namnam"   17.9 ns   26.8 ns     x1.50   nothing
+
+# findfirst/last for a short string (259 bytes)
+               "a"    6.6 ns   13.6 ns     x2.06       5:5
+              "be"   10.8 ns   90.2 ns     x8.38   115:116
+             "the"   12.3 ns   91.6 ns     x7.45   150:152
+            "code"   13.2 ns   98.3 ns     x7.46   188:191
+           "Julia"    8.0 ns   29.8 ns     x3.70       1:5
+        "language"   10.7 ns   42.9 ns     x4.01     49:56
+      "installing"   23.6 ns   93.4 ns     x3.96   235:244
+          "Python"   12.3 ns   93.5 ns     x7.63   nothing
+
+# countall for a long string (3320882 bytes)
+               "."  481.8 μs  679.6 μs     x1.41     28950
+              "if"  242.3 μs    2.7 ms    x11.10      7775
+             "for"  227.5 μs    2.3 ms     x9.93      4496
+          "struct"  234.8 μs    1.5 ms     x6.38       825
+        "function"  234.1 μs    1.5 ms     x6.29      4620
+      "baremodule"  138.6 μs    1.1 ms     x8.12        16
+     "abracadabra"  169.4 μs  733.5 μs     x4.33         0
+"https://julialang.org/license"  150.6 μs  702.4 μs     x4.66       186
+
+# countall for a low-complexity string (248956422 bytes)
+               "A"  464.8 ms  929.2 ms     x2.00  67070277
+             "AAA"  179.9 ms  828.0 ms     x4.60   8516543
+            "TATA"   98.0 ms  511.9 ms     x5.22   1263092
+          "GAATTC"   70.3 ms  378.9 ms     x5.39     67141
+       "CGTACGTAC"   81.8 ms  454.4 ms     x5.55        14
+     "GTTTTCCCCTC"   71.8 ms  239.1 ms     x3.33       131
+   "CCCCCCCCCCCCC"   82.7 ms   99.9 ms     x1.21       246
+"XXXXXXXXXXXXXXXX"   14.5 ms   28.6 ms     x1.97         0
+
+# -noavx2 -forward
+
+             Query        SS      Base     Ratio    Result
+
+# findfirst/last for a very short string (11 bytes)
+               "c"    6.5 ns   15.1 ns     x2.32       5:5
+              "ca"   15.5 ns   34.8 ns     x2.25       5:6
+             "cad"   15.5 ns   36.8 ns     x2.37       5:7
+            "cada"   16.0 ns   38.0 ns     x2.38       5:8
+           "cadab"   16.4 ns   38.8 ns     x2.36       5:9
+          "cadabr"   17.0 ns   41.0 ns     x2.41      5:10
+         "cadabra"   16.9 ns   41.3 ns     x2.44      5:11
+          "namnam"   19.4 ns   34.1 ns     x1.76   nothing
+
+# findfirst/last for a short string (259 bytes)
+               "a"    6.9 ns   14.0 ns     x2.04       5:5
+              "be"   15.5 ns   95.8 ns     x6.17   115:116
+             "the"   18.0 ns   97.3 ns     x5.41   150:152
+            "code"   20.5 ns  105.9 ns     x5.16   188:191
+           "Julia"    8.5 ns   36.5 ns     x4.27       1:5
+        "language"   11.1 ns   47.0 ns     x4.24     49:56
+      "installing"   30.7 ns   96.0 ns     x3.13   235:244
+          "Python"   20.6 ns   96.1 ns     x4.66   nothing
+
+# countall for a long string (3320882 bytes)
+               "."  466.9 μs  676.4 μs     x1.45     28950
+              "if"  335.6 μs    2.5 ms     x7.53      7775
+             "for"  343.9 μs    2.3 ms     x6.61      4496
+          "struct"  340.4 μs    1.5 ms     x4.37       825
+        "function"  347.0 μs    1.5 ms     x4.18      4620
+      "baremodule"  256.1 μs    1.1 ms     x4.37        16
+     "abracadabra"  285.4 μs  774.7 μs     x2.71         0
+"https://julialang.org/license"  270.7 μs  734.3 μs     x2.71       186
+
+# countall for a low-complexity string (248956422 bytes)
+               "A"  449.6 ms  938.8 ms     x2.09  67070277
+             "AAA"  230.7 ms  856.2 ms     x3.71   8516543
+            "TATA"  138.1 ms  510.2 ms     x3.69   1263092
+          "GAATTC"   98.6 ms  395.7 ms     x4.01     67141
+       "CGTACGTAC"  114.6 ms  454.8 ms     x3.97        14
+     "GTTTTCCCCTC"  105.1 ms  239.1 ms     x2.27       131
+   "CCCCCCCCCCCCC"  113.3 ms   99.9 ms     x0.88       246
+"XXXXXXXXXXXXXXXX"   34.8 ms   29.0 ms     x0.83         0
+
+
+Julia Version 1.6.0-rc1
+Commit a58bdd9010 (2021-02-06 15:49 UTC)
+Platform Info:
+  OS: Linux (x86_64-pc-linux-gnu)
+  CPU: AMD Ryzen 9 3950X 16-Core Processor
+  WORD_SIZE: 64
+  LIBM: libopenlibm
+  LLVM: libLLVM-11.0.1 (ORCJIT, znver2)
+Environment:
+  JULIA_PROJECT = @.

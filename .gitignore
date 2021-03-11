@@ -1,3 +1,4 @@
 /Manifest.toml
 *.so
 /benchmark/chr1.*
+/benchmark/benchmark*.txt

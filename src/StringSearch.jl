@@ -65,10 +65,9 @@ function search_forward(a, b, s)
             p += 1
         end
         return -1
-    elseif n < d + 32 #|| !use_avx2()
+    elseif n < d + 32 || !use_avx2()
         # SSE2
         let
-            w = 16
             F = set1_epi8_128(codeunit(a, 1))
             L = set1_epi8_128(codeunit(a, m))
             while true
@@ -83,17 +82,32 @@ function search_forward(a, b, s)
                     end
                     mask &= mask - 1
                 end
-                step = min(w, p_end - (p + d + w))
-                if step == 0
-                    return -1
+                # 16 is the width of registers in bytes
+                rem = p_end - (p + d + 16)
+                if rem < 16
+                    p += rem
+                    break
                 end
-                p += step
+                p += 16
             end
+            # Putting the following part inside the main loop above makes code
+            # clean but it seems to have a significant negative impact on the
+            # performance on Zen2, probably due to variable step size.
+            S = loadu_si128(p)
+            T = loadu_si128(p + d)
+            mask = movemask_epi8(and_si128(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
+            while mask ≠ 0
+                i = trailing_zeros(mask)
+                if memcmp(p + i + 1, pointer(a) + 1, m - 2) == 0
+                    return Int(p + i - pointer(b))
+                end
+                mask &= mask - 1
+            end
+            return -1
         end
     else
         # AVX2
         let
-            w = 32
             F = set1_epi8_256(codeunit(a, 1))
             L = set1_epi8_256(codeunit(a, m))
             while true
@@ -108,12 +122,28 @@ function search_forward(a, b, s)
                     end
                     mask &= mask - 1
                 end
-                step = min(w, p_end - (p + d + w))
-                if step == 0
-                    return -1
+                # 32 is the width of registers in bytes
+                rem = p_end - (p + d + 32)
+                if rem < 32
+                    p += rem
+                    break
                 end
-                p += step
+                p += 32
             end
+            # Putting the following part inside the main loop above makes code
+            # clean but it seems to have a significant negative impact on the
+            # performance on Zen2, probably due to variable step size.
+            S = loadu_si256(p)
+            T = loadu_si256(p + d)
+            mask = movemask_epi8(and_si256(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
+            while mask ≠ 0
+                i = trailing_zeros(mask)
+                if memcmp(p + i + 1, pointer(a) + 1, m - 2) == 0
+                    return Int(p + i - pointer(b))
+                end
+                mask &= mask - 1
+            end
+            return -1
         end
     end
 end

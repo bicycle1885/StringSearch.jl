@@ -124,7 +124,7 @@ function search_backward(a, b, s)
     # SIMD search
     F = set1_epi8_128(codeunit(a, 1))
     L = set1_epi8_128(codeunit(a, m))
-    p = pointer(b) + n - m - d
+    p = pointer(b) + n - w - d
     while true
         S = loadu_si128(p)
         T = loadu_si128(p + d)

@@ -16,6 +16,9 @@ using Test
     @test findlast("a", b) == 11:11
     @test findlast("abra", b) == 8:11
     @test findlast("da", b) == 7:8
+    @test findprev("da", b, 9) == 7:8
+    @test findprev("da", b, 8) == 7:8
+    @test findprev("da", b, 7) === nothing
 
     b = "abracadabraabracadabra"  # 22 bytes
     @test findfirst("", b) == 1:0
@@ -31,6 +34,12 @@ using Test
     @test findlast("a", b) == 22:22
     @test findlast("abra", b) == 19:22
     @test findlast("da", b) == 18:19
+    @test findprev("a", b, 22) == 22:22
+    @test findprev("a", b, 21) == 19:19
+    @test findprev("abra", b, 21) == 12:15
+    @test findprev("da", b, 22) == 18:19
+    @test findprev("da", b, 19) == 18:19
+    @test findprev("da", b, 18) == 7:8
 
     b = """
     Julia is a high-level, high-performance dynamic language for technical computing. The main homepage for Julia can be found at julialang.org. This is the GitHub repository of Julia source code, including instructions for compiling and installing Julia, below.
@@ -49,6 +58,9 @@ using Test
 
     @test findlast("Julia", b) === 1:5
     @test findlast("言語", b) === 6:9
+    @test findprev("言語", b, 10) === 6:9
+    @test findprev("言語", b, 9) === 6:9
+    @test findprev("言語", b, 8) === nothing
 
     @test findfirst("a", "") === nothing
     @test findfirst("aa", "a") === nothing
@@ -66,6 +78,11 @@ using Test
     @test findnext("", "", 3) === nothing
 
     @test findlast("", "") === 1:0
+    @test findprev("", "", -2) === nothing
+    @test findprev("", "", -1) === nothing
+    @test findprev("", "", 0) === 1:0
+    @test findprev("", "", 1) === 1:0
+    @test findprev("", "", 2) === 1:0
 
     @test findfirst("", "a") === 1:0
     @test findnext("", "a", -1) === 1:0

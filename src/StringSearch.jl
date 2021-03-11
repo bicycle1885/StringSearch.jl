@@ -156,10 +156,9 @@ function search_backward(a, b, s)
     end
 
     d = m - 1  # distance between registers
-    w = 16     # register width in bytes
-    if n < d + w
-        p = pointer(b) + n - m
+    if n < d + 16
         # too short to use SIMD
+        p = pointer(b) + n - m
         while p ≥ pointer(b)
             if memcmp(p, pointer(a), m) == 0
                 return Int(p - pointer(b))
@@ -167,28 +166,52 @@ function search_backward(a, b, s)
             p -= 1
         end
         return -1
-    end
-
-    # SIMD search
-    F = set1_epi8_128(codeunit(a, 1))
-    L = set1_epi8_128(codeunit(a, m))
-    p = pointer(b) + n - w - d
-    while true
-        S = loadu_si128(p)
-        T = loadu_si128(p + d)
-        mask = movemask_epi8(and_si128(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
-        while mask ≠ 0
-            i = sizeof(mask) * 8 - leading_zeros(mask) - 1
-            if memcmp(pointer(a) + 1, p + i + 1, m - 2) == 0
-                return Int(p + i - pointer(b))
+    elseif n < d + 32 || !use_avx2()
+        # SSE2
+        w = 16
+        F = set1_epi8_128(codeunit(a, 1))
+        L = set1_epi8_128(codeunit(a, m))
+        p = pointer(b) + n - w - d
+        while true
+            S = loadu_si128(p)
+            T = loadu_si128(p + d)
+            mask = movemask_epi8(and_si128(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
+            while mask ≠ 0
+                i = sizeof(mask) * 8 - leading_zeros(mask) - 1
+                if memcmp(pointer(a) + 1, p + i + 1, m - 2) == 0
+                    return Int(p + i - pointer(b))
+                end
+                mask ⊻= 1 << i
             end
-            mask ⊻= 1 << i
+            step = min(w, p - pointer(b))
+            if step == 0
+                return -1
+            end
+            p -= step
         end
-        step = min(w, p - pointer(b))
-        if step == 0
-            return -1
+    else
+        # AVX2
+        w = 32
+        F = set1_epi8_256(codeunit(a, 1))
+        L = set1_epi8_256(codeunit(a, m))
+        p = pointer(b) + n - w - d
+        while true
+            S = loadu_si256(p)
+            T = loadu_si256(p + d)
+            mask = movemask_epi8(and_si256(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
+            while mask ≠ 0
+                i = sizeof(mask) * 8 - leading_zeros(mask) - 1
+                if memcmp(pointer(a) + 1, p + i + 1, m - 2) == 0
+                    return Int(p + i - pointer(b))
+                end
+                mask ⊻= 1 << i
+            end
+            step = min(w, p - pointer(b))
+            if step == 0
+                return -1
+            end
+            p -= step
         end
-        p -= step
     end
 end
 

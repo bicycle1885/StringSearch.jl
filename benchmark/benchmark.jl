@@ -39,7 +39,7 @@ function benchmark_findlast(a, b)
 end
 
 # AVX2
-S.AVX2[] = "-avx2" ∈ ARGS || "-no-avx2" ∉ ARGS
+S.AVX2[] = "-avx2" ∈ ARGS || "-noavx2" ∉ ARGS
 if S.use_avx2()
     @info "AVX2 is active"
 else
@@ -94,8 +94,8 @@ end
 
 b = "abracadabra"
 println()
-println("# findfirst for a very short string ($(sizeof(b)) bytes)")
-for a in ["c", "ca", "cad", "cada", "cadab", "cadabr", "cadabra"]
+println("# findfirst/last for a very short string ($(sizeof(b)) bytes)")
+for a in ["c", "ca", "cad", "cada", "cadab", "cadabr", "cadabra", "namnam"]
     if forward
         benchmark_findfirst(a, b)
     else
@@ -107,8 +107,8 @@ b = """
 Julia is a high-level, high-performance dynamic language for technical computing. The main homepage for Julia can be found at julialang.org. This is the GitHub repository of Julia source code, including instructions for compiling and installing Julia, below.
 """
 println()
-println("# findfirst for a short string ($(sizeof(b)) bytes)")
-for a in ["a", ".", "be", "language", "code", "Julia", "installing"]
+println("# findfirst/last for a short string ($(sizeof(b)) bytes)")
+for a in ["a", "be", "the", "code", "Julia", "language", "installing", "Python"]
     if forward
         benchmark_findfirst(a, b)
     else
@@ -120,7 +120,7 @@ if isfile("base.txt.zst")
     b = read(pipeline("base.txt.zst", `zstd -d`), String)
     println()
     println("# countall for a long string ($(sizeof(b)) bytes)")
-    for a in [".", "if", "for", "end", "function", "baremodule", "https://julialang.org/license"]
+    for a in [".", "if", "for", "struct", "function", "baremodule", "abracadabra", "https://julialang.org/license"]
         benchmark_countall(a, b)
     end
 end
@@ -129,7 +129,7 @@ if isfile("chr1.txt.zst")
     b = read(pipeline("chr1.txt.zst", `zstd -d`), String)
     println()
     println("# countall for a low-complexity string ($(sizeof(b)) bytes)")
-    for a in ["A", "AAA", "TATA", "GAATTC", "GTTTTCCCCTC", "CCCCCCCCCCCCC", "XXXXXXXXXXXXXXXX"]
+    for a in ["A", "AAA", "TATA", "GAATTC", "CGTACGTAC", "GTTTTCCCCTC", "CCCCCCCCCCCCC", "XXXXXXXXXXXXXXXX"]
         benchmark_countall(a, b)
     end
 end

@@ -1,14 +1,9 @@
 module StringSearch
 
 const Str = Union{String,SubString{String}}
+const AVX2 = Ref{Bool}(get(ENV, "AVX2", "1") ≠ "0")
 
-function supports_avx2()
-    if Sys.islinux()
-        success(pipeline(`cat /proc/cpuinfo`, `grep -c avx2`))
-    else
-        false
-    end
-end
+use_avx2() = AVX2[]
 
 function findnext(a::Str, b::Str, i::Int)
     if i > lastindex(b) + 1
@@ -59,10 +54,9 @@ function search_forward(a, b, s)
     end
 
     d = m - 1           # distance between registers
-    w = 16              # register width in bytes
     p = pointer(b) + s  # search position
     p_end = p + n       # end position (exclusive)
-    if n < d + w
+    if n < d + 16
         # too short to use SIMD
         while p + m - 1 < p_end
             if memcmp(p, pointer(a), m) == 0
@@ -71,28 +65,56 @@ function search_forward(a, b, s)
             p += 1
         end
         return -1
-    end
-
-    # SIMD search
-    F = set1_epi8_128(codeunit(a, 1))
-    L = set1_epi8_128(codeunit(a, m))
-    while true
-        S = loadu_si128(p)
-        T = loadu_si128(p + d)
-        mask = movemask_epi8(and_si128(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
-        while mask ≠ 0
-            i = trailing_zeros(mask)
-            # NOTE: we already know that the first and the last byte are matching
-            if memcmp(p + i + 1, pointer(a) + 1, m - 2) == 0
-                return Int(p + i - pointer(b))
+    elseif n < d + 32 #|| !use_avx2()
+        # SSE2
+        let
+            w = 16
+            F = set1_epi8_128(codeunit(a, 1))
+            L = set1_epi8_128(codeunit(a, m))
+            while true
+                S = loadu_si128(p)
+                T = loadu_si128(p + d)
+                mask = movemask_epi8(and_si128(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
+                while mask ≠ 0
+                    i = trailing_zeros(mask)
+                    # NOTE: we already know that the first and the last byte are matching
+                    if memcmp(p + i + 1, pointer(a) + 1, m - 2) == 0
+                        return Int(p + i - pointer(b))
+                    end
+                    mask &= mask - 1
+                end
+                step = min(w, p_end - (p + d + w))
+                if step == 0
+                    return -1
+                end
+                p += step
             end
-            mask &= mask - 1
         end
-        step = min(w, p_end - (p + d + w))
-        if step == 0
-            return -1
+    else
+        # AVX2
+        let
+            w = 32
+            F = set1_epi8_256(codeunit(a, 1))
+            L = set1_epi8_256(codeunit(a, m))
+            while true
+                S = loadu_si256(p)
+                T = loadu_si256(p + d)
+                mask = movemask_epi8(and_si256(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
+                while mask ≠ 0
+                    i = trailing_zeros(mask)
+                    # NOTE: we already know that the first and the last byte are matching
+                    if memcmp(p + i + 1, pointer(a) + 1, m - 2) == 0
+                        return Int(p + i - pointer(b))
+                    end
+                    mask &= mask - 1
+                end
+                step = min(w, p_end - (p + d + w))
+                if step == 0
+                    return -1
+                end
+                p += step
+            end
         end
-        p += step
     end
 end
 

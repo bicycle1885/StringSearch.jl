@@ -67,84 +67,80 @@ function search_forward(a, b, s)
         return -1
     elseif n < d + 32 || !use_avx2()
         # SSE2
-        let
-            F = set1_epi8_128(codeunit(a, 1))
-            L = set1_epi8_128(codeunit(a, m))
-            while true
-                S = loadu_si128(p)
-                T = loadu_si128(p + d)
-                mask = movemask_epi8(and_si128(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
-                while mask ≠ 0
-                    i = trailing_zeros(mask)
-                    # NOTE: we already know that the first and the last byte are matching
-                    if memcmp(p + i + 1, pointer(a) + 1, m - 2) == 0
-                        return Int(p + i - pointer(b))
-                    end
-                    mask &= mask - 1
-                end
-                # 16 is the width of registers in bytes
-                rem = p_end - (p + d + 16)
-                if rem < 16
-                    p += rem
-                    break
-                end
-                p += 16
-            end
-            # Putting the following part inside the main loop above makes code
-            # clean but it seems to have a significant negative impact on the
-            # performance on Zen2, probably due to variable step size.
+        F = set1_epi8_128(codeunit(a, 1))
+        L = set1_epi8_128(codeunit(a, m))
+        while true
             S = loadu_si128(p)
             T = loadu_si128(p + d)
             mask = movemask_epi8(and_si128(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
             while mask ≠ 0
                 i = trailing_zeros(mask)
+                # NOTE: we already know that the first and the last byte are matching
                 if memcmp(p + i + 1, pointer(a) + 1, m - 2) == 0
                     return Int(p + i - pointer(b))
                 end
                 mask &= mask - 1
             end
-            return -1
+            # 16 is the width of registers in bytes
+            rem = p_end - (p + d + 16)
+            if rem < 16
+                p += rem
+                break
+            end
+            p += 16
         end
+        # Putting the following part inside the main loop above makes code
+        # clean but it seems to have a significant negative impact on the
+        # performance on Zen2, probably due to variable step size.
+        S = loadu_si128(p)
+        T = loadu_si128(p + d)
+        mask = movemask_epi8(and_si128(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
+        while mask ≠ 0
+            i = trailing_zeros(mask)
+            if memcmp(p + i + 1, pointer(a) + 1, m - 2) == 0
+                return Int(p + i - pointer(b))
+            end
+            mask &= mask - 1
+        end
+        return -1
     else
         # AVX2
-        let
-            F = set1_epi8_256(codeunit(a, 1))
-            L = set1_epi8_256(codeunit(a, m))
-            while true
-                S = loadu_si256(p)
-                T = loadu_si256(p + d)
-                mask = movemask_epi8(and_si256(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
-                while mask ≠ 0
-                    i = trailing_zeros(mask)
-                    # NOTE: we already know that the first and the last byte are matching
-                    if memcmp(p + i + 1, pointer(a) + 1, m - 2) == 0
-                        return Int(p + i - pointer(b))
-                    end
-                    mask &= mask - 1
-                end
-                # 32 is the width of registers in bytes
-                rem = p_end - (p + d + 32)
-                if rem < 32
-                    p += rem
-                    break
-                end
-                p += 32
-            end
-            # Putting the following part inside the main loop above makes code
-            # clean but it seems to have a significant negative impact on the
-            # performance on Zen2, probably due to variable step size.
+        F = set1_epi8_256(codeunit(a, 1))
+        L = set1_epi8_256(codeunit(a, m))
+        while true
             S = loadu_si256(p)
             T = loadu_si256(p + d)
             mask = movemask_epi8(and_si256(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
             while mask ≠ 0
                 i = trailing_zeros(mask)
+                # NOTE: we already know that the first and the last byte are matching
                 if memcmp(p + i + 1, pointer(a) + 1, m - 2) == 0
                     return Int(p + i - pointer(b))
                 end
                 mask &= mask - 1
             end
-            return -1
+            # 32 is the width of registers in bytes
+            rem = p_end - (p + d + 32)
+            if rem < 32
+                p += rem
+                break
+            end
+            p += 32
         end
+        # Putting the following part inside the main loop above makes code
+        # clean but it seems to have a significant negative impact on the
+        # performance on Zen2, probably due to variable step size.
+        S = loadu_si256(p)
+        T = loadu_si256(p + d)
+        mask = movemask_epi8(and_si256(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
+        while mask ≠ 0
+            i = trailing_zeros(mask)
+            if memcmp(p + i + 1, pointer(a) + 1, m - 2) == 0
+                return Int(p + i - pointer(b))
+            end
+            mask &= mask - 1
+        end
+        return -1
     end
 end
 
@@ -196,42 +192,6 @@ function search_backward(a, b, s)
     end
 end
 
-function avx2_search_julia(a, b, k)
-    m = ncodeunits(a)
-    n = ncodeunits(b) - k
-    p = pointer(b) + k
-    if m == 0
-        return k
-    elseif m > n
-        return -1
-    elseif m == 1
-        p = memchr(p, codeunit(a, 1), n)
-        return p == C_NULL ? -1 : Int(p - pointer(b))
-    end
-    F = set1_epi8_256(codeunit(a, 1))
-    L = set1_epi8_256(codeunit(a, m))
-    b_end = pointer(b) + ncodeunits(b)
-    while p + m - 1 + 31 < b_end
-        S = loadu_si256(p)
-        T = loadu_si256(p + m - 1)
-        mask = movemask_epi8(and_si256(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
-        while mask ≠ 0
-            i = trailing_zeros(mask)
-            if memcmp(pointer(a) + 1, p + i + 1, m - 2) == 0
-                return Int(p + i - pointer(b))
-            end
-            mask &= mask - 1
-        end
-        p += 32
-    end
-    while p + m - 1 < b_end
-        if memcmp(pointer(a), p, m) == 0
-            return Int(p - pointer(b))
-        end
-        p += 1
-    end
-    return -1
-end
 
 # Low-level code
 # --------------

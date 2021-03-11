@@ -46,6 +46,7 @@ using Test
     """
     for a in ["a", ".", "be", "language", "code", "Julia", "installing"]
         @test findfirst(a, b) == Base.findfirst(a, b)
+        @test findlast(a, b) == Base.findlast(a, b)
     end
 
     b = "Julia言語"
@@ -102,8 +103,8 @@ using Test
         @test findnext(a, b, i) == ifelse(iseven(i), i+1:i+2, i:i+1)
     end
     @test findnext(a, b, 200) === nothing
-    for i in 200:2
-        @test findprev(a, b, i) == ifelse(iseven(i), i-1:i, i:i-1)
+    for i in 200:-1:2
+        @test findprev(a, b, i) == ifelse(iseven(i), i-1:i, i-2:i-1)
     end
     @test findprev(a, b, 1) === nothing
 end

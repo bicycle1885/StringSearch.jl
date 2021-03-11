@@ -15,11 +15,7 @@ function findnext(a::Str, b::Str, i::Int)
         return nothing
     end
     i = max(i, firstindex(b))
-    @static if supports_avx2()
-        offset = avx2_search_julia(a, b, i - 1)
-    else
-        offset = sse2_search_julia(a, b, i - 1)
-    end
+    offset = search_forward(a, b, i - 1)
     return offset ≥ 0 ? (offset+1:offset+lastindex(a)) : nothing
 end
 
@@ -27,49 +23,125 @@ findnext(a::Str, b::Str, i::Integer) = findnext(a, b, Int(i))
 
 findfirst(a::Str, b::Str) = findnext(a, b, firstindex(b))
 
-const libstrsearch = joinpath(@__DIR__, "libstrsearch.so")
+function findprev(a::Str, b::Str, i::Int)
+    if i < firstindex(b) - 1
+        return nothing
+    end
+    i = min(i, lastindex(b))
+    s = ncodeunits(b) - (nextind(b, i) - 1)
+    offset = search_backward(a, b, s)
+    return offset ≥ 0 ? (offset+1:offset+lastindex(a)) : nothing
+end
 
-sse2_search_cxx(a, b, o) =
-    GC.@preserve a b Int(ccall((:sse2_search, libstrsearch), Cssize_t, (Ptr{UInt8}, Cssize_t, Ptr{UInt8}, Cssize_t), a, ncodeunits(a), pointer(b) + o, ncodeunits(b) - o))
+findprev(a::Str, b::Str, i::Integer) = findprev(a, b, Int(i))
 
-avx2_search_cxx(a, b, o) =
-    GC.@preserve a b Int(ccall((:avx2_search, libstrsearch), Cssize_t, (Ptr{UInt8}, Cssize_t, Ptr{UInt8}, Cssize_t), a, ncodeunits(a), pointer(b) + o, ncodeunits(b) - o))
+findlast(a::Str, b::Str) = findprev(a, b, lastindex(b))
 
-function sse2_search_julia(a, b, k)
+function search_forward(a::UInt8, b, s)
+    p = memchr(pointer(b) + s, a, ncodeunits(b) - s)
+    return p ≠ C_NULL ? Int(p - pointer(b)) : -1
+end
+
+function search_backward(a::UInt8, b, s)
+    p = memrchr(pointer(b), a, ncodeunits(b) - s)
+    return p ≠ C_NULL ? Int(p - pointer(b)) : -1
+end
+
+function search_forward(a, b, s)
     m = ncodeunits(a)
-    n = ncodeunits(b) - k
-    p = pointer(b) + k
+    n = ncodeunits(b) - s
     if m == 0
-        return k
+        return s
     elseif m > n
         return -1
     elseif m == 1
-        p = memchr(p, codeunit(a, 1), n)
-        return p == C_NULL ? -1 : Int(p - pointer(b))
+        return search_forward(codeunit(a, 1), b, s)
     end
+
+    d = m - 1           # distance between registers
+    w = 16              # register width in bytes
+    p = pointer(b) + s  # search position
+    p_end = p + n       # end position (exclusive)
+    if n < d + w
+        # too short to use SIMD
+        while p + m - 1 < p_end
+            if memcmp(p, pointer(a), m) == 0
+                return Int(p - pointer(b))
+            end
+            p += 1
+        end
+        return -1
+    end
+
+    # SIMD search
     F = set1_epi8_128(codeunit(a, 1))
     L = set1_epi8_128(codeunit(a, m))
-    b_end = pointer(b) + ncodeunits(b)
-    while p + m - 1 + 15 < b_end
+    while true
         S = loadu_si128(p)
-        T = loadu_si128(p + m - 1)
+        T = loadu_si128(p + d)
         mask = movemask_epi8(and_si128(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
         while mask ≠ 0
             i = trailing_zeros(mask)
-            if memcmp(pointer(a) + 1, p + i + 1, m - 2) == 0
+            # NOTE: we already know that the first and the last byte are matching
+            if memcmp(p + i + 1, pointer(a) + 1, m - 2) == 0
                 return Int(p + i - pointer(b))
             end
             mask &= mask - 1
         end
-        p += 16
-    end
-    while p + m - 1 < b_end
-        if memcmp(pointer(a), p, m) == 0
-            return Int(p - pointer(b))
+        step = min(w, p_end - (p + d + w))
+        if step == 0
+            return -1
         end
-        p += 1
+        p += step
     end
-    return -1
+end
+
+function search_backward(a, b, s)
+    m = ncodeunits(a)
+    n = ncodeunits(b) - s
+    if m == 0
+        return s
+    elseif n < m
+        return -1
+    elseif m == 1
+        return search_backward(codeunit(a, 1), b, s)
+    end
+
+    d = m - 1  # distance between registers
+    w = 16     # register width in bytes
+    if n < d + w
+        p = pointer(b) + n - m
+        # too short to use SIMD
+        while p ≥ pointer(b)
+            if memcmp(p, pointer(a), m) == 0
+                return Int(p - pointer(b))
+            end
+            p -= 1
+        end
+        return -1
+    end
+
+    # SIMD search
+    F = set1_epi8_128(codeunit(a, 1))
+    L = set1_epi8_128(codeunit(a, m))
+    p = pointer(b) + n - m - d
+    while true
+        S = loadu_si128(p)
+        T = loadu_si128(p + d)
+        mask = movemask_epi8(and_si128(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
+        while mask ≠ 0
+            i = sizeof(mask) * 8 - leading_zeros(mask) - 1
+            if memcmp(pointer(a) + 1, p + i + 1, m - 2) == 0
+                return Int(p + i - pointer(b))
+            end
+            mask = mask ⊻ 1 << (i - 1)
+        end
+        step = min(w, p - pointer(b))
+        if step == 0
+            return -1
+        end
+        p -= step
+    end
 end
 
 function avx2_search_julia(a, b, k)
@@ -114,6 +186,7 @@ end
 
 memcmp(p, q, n) = ccall(:memcmp, Cint, (Ptr{UInt8}, Ptr{UInt8}, Csize_t), p, q, n)
 memchr(p, c, n) = ccall(:memchr, Ptr{UInt8}, (Ptr{UInt8}, Cint, Csize_t), p, c, n)
+memrchr(p, c, n) = ccall(:memrchr, Ptr{UInt8}, (Ptr{UInt8}, Cint, Csize_t), p, c, n)
 
 const U8x16 = NTuple{16,VecElement{UInt8}}
 const U8x32 = NTuple{32,VecElement{UInt8}}

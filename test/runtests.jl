@@ -1,4 +1,4 @@
-using StringSearch: StringSearch, findfirst, findnext
+using StringSearch: StringSearch, findfirst, findnext, findlast, findprev
 using Test
 
 @testset "StringSearch.jl" begin
@@ -13,6 +13,10 @@ using Test
     @test findnext("abra", b, 1) == 1:4
     @test findnext("abra", b, 2) == 8:11
 
+    @test findlast("a", b) == 11:11
+    @test findlast("abra", b) == 8:11
+    @test findlast("da", b) == 7:8
+
     b = "abracadabraabracadabra"  # 22 bytes
     @test findfirst("", b) == 1:0
     @test findfirst("a", b) == 1:1
@@ -23,6 +27,10 @@ using Test
     @test findfirst("abracadabra", b) == 1:11
     @test findnext("abra", b, 1) == 1:4
     @test findnext("abra", b, 2) == 8:11
+
+    @test findlast("a", b) == 22:22
+    @test findlast("abra", b) == 19:22
+    @test findlast("da", b) == 18:19
 
     b = """
     Julia is a high-level, high-performance dynamic language for technical computing. The main homepage for Julia can be found at julialang.org. This is the GitHub repository of Julia source code, including instructions for compiling and installing Julia, below.
@@ -39,9 +47,16 @@ using Test
     @test findnext("言語", b, 6) === 6:9
     @test findnext("言語", b, 7) === nothing
 
+    @test findlast("Julia", b) === 1:5
+    @test findlast("言語", b) === 6:9
+
     @test findfirst("a", "") === nothing
     @test findfirst("aa", "a") === nothing
     @test findfirst("aaa", "aa") === nothing
+
+    @test findlast("a", "") === nothing
+    @test findlast("aa", "a") === nothing
+    @test findlast("aaa", "aa") === nothing
 
     @test findfirst("", "") === 1:0
     @test findnext("", "", -1) === 1:0
@@ -50,6 +65,8 @@ using Test
     @test findnext("", "", 2) === nothing
     @test findnext("", "", 3) === nothing
 
+    @test findlast("", "") === 1:0
+
     @test findfirst("", "a") === 1:0
     @test findnext("", "a", -1) === 1:0
     @test findnext("", "a", 0) === 1:0
@@ -57,8 +74,21 @@ using Test
     @test findnext("", "a", 2) === 2:1
     @test findnext("", "a", 3) === nothing
 
+    @test findlast("", "a") === 1:0
+
     @test findnext("≠", "≠    ", 2) === nothing
     @test findnext(" ≠", "≠    ", 2) === nothing
+
+    a = "ab"
+    b = a ^ 100
+    for i in 1:199
+        @test findnext(a, b, i) == ifelse(iseven(i), i+1:i+2, i:i+1)
+    end
+    @test findnext(a, b, 200) === nothing
+    for i in 200:2
+        @test findprev(a, b, i) == ifelse(iseven(i), i-1:i, i:i-1)
+    end
+    @test findprev(a, b, 1) === nothing
 end
 
 @testset "Base tests" begin

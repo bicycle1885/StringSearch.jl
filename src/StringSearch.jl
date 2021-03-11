@@ -191,10 +191,9 @@ function search_backward(a, b, s)
         end
     else
         # AVX2
-        w = 32
         F = set1_epi8_256(codeunit(a, 1))
         L = set1_epi8_256(codeunit(a, m))
-        p = pointer(b) + n - w - d
+        p = pointer(b) + n - 32 - d
         while true
             S = loadu_si256(p)
             T = loadu_si256(p + d)
@@ -206,12 +205,24 @@ function search_backward(a, b, s)
                 end
                 mask ⊻= 1 << i
             end
-            step = min(w, p - pointer(b))
-            if step == 0
-                return -1
+            rem = p - pointer(b)
+            if rem < 32
+                p -= rem
+                break
             end
-            p -= step
+            p -= 32
         end
+        S = loadu_si256(p)
+        T = loadu_si256(p + d)
+        mask = movemask_epi8(and_si256(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
+        while mask ≠ 0
+            i = sizeof(mask) * 8 - leading_zeros(mask) - 1
+            if memcmp(pointer(a) + 1, p + i + 1, m - 2) == 0
+                return Int(p + i - pointer(b))
+            end
+            mask ⊻= 1 << i
+        end
+        return -1
     end
 end
 

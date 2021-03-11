@@ -182,7 +182,7 @@ function search_backward(a, b, s)
             if memcmp(pointer(a) + 1, p + i + 1, m - 2) == 0
                 return Int(p + i - pointer(b))
             end
-            mask = mask ⊻ 1 << (i - 1)
+            mask = mask ⊻ 1 << i
         end
         step = min(w, p - pointer(b))
         if step == 0

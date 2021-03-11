@@ -31,28 +31,63 @@ function benchmark_findfirst(a, b)
     report(a, ss, base, S.findfirst(a, b))
 end
 
-function countall(findnext, a, b)
-    n = 0
-    r = findnext(a, b, firstindex(b))
-    while r !== nothing
-        n += 1
-        r = findnext(a, b, first(r) + 1)
-    end
-    return n
+function benchmark_findlast(a, b)
+    @assert B.findlast(a, b) == S.findlast(a, b)
+    ss = @benchmark S.findlast($a, $b)
+    base = @benchmark B.findlast($a, $b)
+    report(a, ss, base, S.findlast(a, b))
 end
 
-function benchmark_countall(a, b)
-    @assert countall(B.findnext, a, b) == countall(S.findnext, a, b)
-    ss = @benchmark countall($S.findnext, $a, $b)
-    base = @benchmark countall($B.findnext, $a, $b)
-    report(a, ss, base, countall(B.findnext, a, b))
-end
-
-S.AVX2[] = get(ENV, "AVX2", "1") ≠ "0"
+# AVX2
+S.AVX2[] = "-avx2" ∈ ARGS || "-no-avx2" ∉ ARGS
 if S.use_avx2()
     @info "AVX2 is active"
 else
     @info "AVX2 is not active"
+end
+
+# search direction
+const forward = "-forward" ∈ ARGS || "-backward" ∉ ARGS
+if forward
+    @info "forward search mode"
+else
+    @info "backward search mode"
+end
+
+if forward
+    function countall(findnext, a, b)
+        n = 0
+        r = findnext(a, b, firstindex(b))
+        while r !== nothing
+            n += 1
+            r = findnext(a, b, first(r) + 1)
+        end
+        return n
+    end
+else
+    function countall(findprev, a, b)
+        n = 0
+        r = findprev(a, b, lastindex(b))
+        while r !== nothing
+            n += 1
+            r = findprev(a, b, last(r) - 1)
+        end
+        return n
+    end
+end
+
+function benchmark_countall(a, b)
+    if forward
+        sfind = S.findnext
+        bfind = B.findnext
+    else
+        sfind = S.findprev
+        bfind = B.findprev
+    end
+    @assert countall(bfind, a, b) == countall(sfind, a, b)
+    ss = @benchmark countall($sfind, $a, $b)
+    base = @benchmark countall($bfind, $a, $b)
+    report(a, ss, base, countall(sfind, a, b))
 end
 
 @printf "%18s  %8s  %8s  %8s  %8s\n" "Query" "SS" "Base" "Ratio" "Result"
@@ -61,7 +96,11 @@ b = "abracadabra"
 println()
 println("# findfirst for a very short string ($(sizeof(b)) bytes)")
 for a in ["c", "ca", "cad", "cada", "cadab", "cadabr", "cadabra"]
-    benchmark_findfirst(a, b)
+    if forward
+        benchmark_findfirst(a, b)
+    else
+        benchmark_findlast(a, b)
+    end
 end
 
 b = """
@@ -70,7 +109,11 @@ Julia is a high-level, high-performance dynamic language for technical computing
 println()
 println("# findfirst for a short string ($(sizeof(b)) bytes)")
 for a in ["a", ".", "be", "language", "code", "Julia", "installing"]
-    benchmark_findfirst(a, b)
+    if forward
+        benchmark_findfirst(a, b)
+    else
+        benchmark_findlast(a, b)
+    end
 end
 
 if isfile("base.txt.zst")

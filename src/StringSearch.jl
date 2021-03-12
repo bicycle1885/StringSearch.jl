@@ -30,12 +30,9 @@ findnext(a::Str, b::Str, i::Integer) = findnext(a, b, Int(i))
 findfirst(a::Str, b::Str) = findnext(a, b, firstindex(b))
 
 function findprev(a::Str, b::Str, i::Int)
-    if i < firstindex(b) - 1
-        return nothing
-    end
-    i = min(i, lastindex(b))
-    s = ncodeunits(b) - (nextind(b, i) - 1)
-    offset = search_backward(a, b, s)
+    i < 0 && return nothing
+    n = ncodeunits(b)
+    offset = search_backward(a, b, n + 1 - nextind(b, min(i, n)))
     return offset ≥ 0 ? (offset+1:offset+lastindex(a)) : nothing
 end
 

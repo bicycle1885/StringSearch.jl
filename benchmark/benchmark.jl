@@ -104,7 +104,7 @@ end
 b = "abracadabra"
 println()
 println("# findfirst/last for a very short string ($(sizeof(b)) bytes)")
-for a in ["c", "ca", "cad", "cada", "cadab", "cadabr", "cadabra", "namnam"]
+for a in ['a', 'd', "c", "ca", "cad", "cada", "cadab", "cadabr", "cadabra", "namnam"]
     short && sizeof(a) > 3 && continue
     if forward
         benchmark_findfirst(a, b)
@@ -118,7 +118,7 @@ Julia is a high-level, high-performance dynamic language for technical computing
 """
 println()
 println("# findfirst/last for a short string ($(sizeof(b)) bytes)")
-for a in ["a", "be", "the", "code", "Julia", "language", "installing", "Python"]
+for a in ['a', 'G', "a", "be", "the", "code", "Julia", "language", "installing", "Python"]
     short && sizeof(a) > 3 && continue
     if forward
         benchmark_findfirst(a, b)
@@ -131,7 +131,7 @@ if isfile("base.txt.zst")
     b = read(pipeline("base.txt.zst", `zstd -d`), String)
     println()
     println("# countall for a long string ($(sizeof(b)) bytes)")
-    for a in [".", "if", "for", "struct", "function", "baremodule", "abracadabra", "https://julialang.org/license"]
+    for a in ['.', '=', ".", "if", "for", "struct", "function", "baremodule", "abracadabra", "https://julialang.org/license"]
         short && sizeof(a) > 3 && continue
         benchmark_countall(a, b)
     end
@@ -141,7 +141,7 @@ if isfile("chr1.txt.zst")
     b = read(pipeline("chr1.txt.zst", `zstd -d`), String)
     println()
     println("# countall for a low-complexity string ($(sizeof(b)) bytes)")
-    for a in ["A", "AAA", "TATA", "GAATTC", "CGTACGTAC", "GTTTTCCCCTC", "CCCCCCCCCCCCC", "XXXXXXXXXXXXXXXX"]
+    for a in ['A', 'N', "A", "AAA", "TATA", "GAATTC", "CGTACGTAC", "GTTTTCCCCTC", "CCCCCCCCCCCCC", "XXXXXXXXXXXXXXXX"]
         short && sizeof(a) > 3 && continue
         benchmark_countall(a, b)
     end

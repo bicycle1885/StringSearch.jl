@@ -20,9 +20,6 @@ Base.getindex(mem::MemoryView, i::Integer) = unsafe_load(mem.ptr + i - 1)
 MemoryView(s::Str) = MemoryView(pointer(s), sizeof(s))
 
 function findnext(a::Str, b::Str, i::Int)
-    if i > lastindex(b) + 1
-        return nothing
-    end
     i = max(i, firstindex(b))
     offset = search_forward(a, b, i - 1)
     return offset ≥ 0 ? (offset+1:offset+lastindex(a)) : nothing

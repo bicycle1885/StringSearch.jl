@@ -3,176 +3,208 @@
              Query        SS      Base     Ratio    Result
 
 # findfirst/last for a very short string (11 bytes)
-               "c"   13.0 ns   15.4 ns     x1.19       5:5
-              "ca"   20.4 ns   39.7 ns     x1.95       5:6
-             "cad"   19.0 ns   42.0 ns     x2.22       5:7
-            "cada"   16.7 ns   42.5 ns     x2.55       5:8
-           "cadab"   14.9 ns   42.2 ns     x2.83       5:9
-          "cadabr"   13.7 ns   42.1 ns     x3.08      5:10
-         "cadabra"   13.5 ns   42.4 ns     x3.13      5:11
-          "namnam"   19.0 ns   37.6 ns     x1.98   nothing
+               'a'   10.9 ns   10.4 ns     x0.96        11
+               'd'   11.5 ns   10.6 ns     x0.93         7
+               "c"   14.0 ns   17.4 ns     x1.24       5:5
+              "ca"   19.9 ns   37.7 ns     x1.89       5:6
+             "cad"   18.6 ns   41.6 ns     x2.24       5:7
+            "cada"   18.2 ns   42.0 ns     x2.31       5:8
+           "cadab"   16.4 ns   41.0 ns     x2.51       5:9
+          "cadabr"   14.2 ns   40.7 ns     x2.86      5:10
+         "cadabra"   14.0 ns   40.6 ns     x2.90      5:11
+          "namnam"   22.0 ns   36.5 ns     x1.66   nothing
 
 # findfirst/last for a short string (259 bytes)
-               "a"   13.4 ns   14.3 ns     x1.07   250:250
-              "be"   14.3 ns   39.3 ns     x2.75   253:254
-             "the"   14.4 ns   95.1 ns     x6.61   150:152
-            "code"   14.7 ns   65.6 ns     x4.46   188:191
-           "Julia"   14.4 ns   45.2 ns     x3.14   246:250
-        "language"   18.1 ns  101.7 ns     x5.62     49:56
-      "installing"   14.4 ns   52.3 ns     x3.63   235:244
-          "Python"   15.6 ns  127.0 ns     x8.15   nothing
+               'a'   10.4 ns    9.8 ns     x0.94       250
+               'G'   11.7 ns   10.9 ns     x0.93       154
+               "a"   14.0 ns   15.7 ns     x1.12   250:250
+              "be"   14.9 ns   37.7 ns     x2.53   253:254
+             "the"   15.6 ns   92.7 ns     x5.96   150:152
+            "code"   15.1 ns   65.1 ns     x4.30   188:191
+           "Julia"   14.9 ns   45.6 ns     x3.06   246:250
+        "language"   19.7 ns   99.4 ns     x5.04     49:56
+      "installing"   14.9 ns   51.2 ns     x3.43   235:244
+          "Python"   17.4 ns  127.2 ns     x7.30   nothing
 
 # countall for a long string (3320882 bytes)
-               "."  568.1 μs  661.1 μs     x1.16     28950
-              "if"  242.1 μs    3.4 ms    x13.87      7775
-             "for"  218.1 μs    2.3 ms    x10.53      4496
-          "struct"  221.6 μs    1.6 ms     x7.11       825
-        "function"  226.9 μs    1.4 ms     x6.23      4620
-      "baremodule"  114.6 μs  955.9 μs     x8.34        16
-     "abracadabra"  141.1 μs  843.7 μs     x5.98         0
-"https://julialang.org/license"  135.0 μs  638.7 μs     x4.73       186
+               '.'  595.2 μs  543.5 μs     x0.91     28950
+               '='  754.8 μs  684.3 μs     x0.91     37374
+               "."  662.7 μs  661.0 μs     x1.00     28950
+              "if"  284.4 μs    3.3 ms    x11.66      7775
+             "for"  248.8 μs    2.3 ms     x9.13      4496
+          "struct"  235.7 μs    1.6 ms     x6.61       825
+        "function"  258.1 μs    1.4 ms     x5.49      4620
+      "baremodule"  136.0 μs  944.4 μs     x6.95        16
+     "abracadabra"  170.9 μs  834.8 μs     x4.89         0
+"https://julialang.org/license"  156.6 μs  630.5 μs     x4.03       186
 
 # countall for a low-complexity string (248956422 bytes)
-               "A"  588.3 ms  836.9 ms     x1.42  67070277
-             "AAA"  216.0 ms  947.2 ms     x4.39   8516543
-            "TATA"  107.5 ms  566.2 ms     x5.27   1263092
-          "GAATTC"   76.6 ms  458.3 ms     x5.98     67141
-       "CGTACGTAC"   87.4 ms  484.0 ms     x5.54        14
-     "GTTTTCCCCTC"   76.6 ms  198.7 ms     x2.59       131
-   "CCCCCCCCCCCCC"   87.2 ms   97.6 ms     x1.12       246
-"XXXXXXXXXXXXXXXX"   14.3 ms   32.6 ms     x2.28         0
+               'A'  692.4 ms  675.2 ms     x0.98  67070277
+               'N'  200.3 ms  195.0 ms     x0.97  18475410
+               "A"  815.5 ms  807.0 ms     x0.99  67070277
+             "AAA"  242.1 ms  938.7 ms     x3.88   8516543
+            "TATA"  109.2 ms  564.9 ms     x5.17   1263092
+          "GAATTC"   74.8 ms  454.1 ms     x6.07     67141
+       "CGTACGTAC"   82.5 ms  475.8 ms     x5.77        14
+     "GTTTTCCCCTC"   78.0 ms  197.2 ms     x2.53       131
+   "CCCCCCCCCCCCC"   85.7 ms  100.8 ms     x1.18       246
+"XXXXXXXXXXXXXXXX"   14.6 ms   32.4 ms     x2.22         0
 
 # -noavx2 -backward
 
              Query        SS      Base     Ratio    Result
 
 # findfirst/last for a very short string (11 bytes)
-               "c"   13.4 ns   17.1 ns     x1.27       5:5
-              "ca"   20.3 ns   38.2 ns     x1.88       5:6
-             "cad"   18.8 ns   41.0 ns     x2.18       5:7
-            "cada"   18.9 ns   41.8 ns     x2.22       5:8
-           "cadab"   17.1 ns   41.5 ns     x2.43       5:9
-          "cadabr"   16.0 ns   40.8 ns     x2.55      5:10
-         "cadabra"   13.8 ns   40.9 ns     x2.97      5:11
-          "namnam"   22.8 ns   36.4 ns     x1.59   nothing
+               'a'   10.5 ns    9.9 ns     x0.94        11
+               'd'   11.0 ns   10.1 ns     x0.92         7
+               "c"   13.4 ns   14.8 ns     x1.11       5:5
+              "ca"   19.1 ns   36.9 ns     x1.93       5:6
+             "cad"   17.6 ns   39.9 ns     x2.27       5:7
+            "cada"   17.7 ns   40.7 ns     x2.30       5:8
+           "cadab"   14.8 ns   40.2 ns     x2.71       5:9
+          "cadabr"   14.1 ns   39.2 ns     x2.79      5:10
+         "cadabra"   13.3 ns   39.1 ns     x2.94      5:11
+          "namnam"   20.1 ns   34.9 ns     x1.74   nothing
 
 # findfirst/last for a short string (259 bytes)
-               "a"   13.4 ns   14.2 ns     x1.06   250:250
-              "be"   14.3 ns   37.8 ns     x2.64   253:254
-             "the"   17.9 ns   95.1 ns     x5.32   150:152
-            "code"   16.3 ns   64.7 ns     x3.96   188:191
-           "Julia"   14.3 ns   44.1 ns     x3.08   246:250
-        "language"   24.1 ns  102.6 ns     x4.26     49:56
-      "installing"   14.4 ns   51.1 ns     x3.55   235:244
-          "Python"   23.4 ns  127.6 ns     x5.45   nothing
+               'a'   10.0 ns    9.4 ns     x0.94       250
+               'G'   11.2 ns   10.4 ns     x0.93       154
+               "a"   13.4 ns   13.8 ns     x1.03   250:250
+              "be"   14.3 ns   36.1 ns     x2.53   253:254
+             "the"   17.2 ns   88.6 ns     x5.15   150:152
+            "code"   15.9 ns   62.7 ns     x3.93   188:191
+           "Julia"   14.2 ns   43.6 ns     x3.08   246:250
+        "language"   23.3 ns   96.3 ns     x4.14     49:56
+      "installing"   14.2 ns   53.5 ns     x3.77   235:244
+          "Python"   22.2 ns  121.4 ns     x5.46   nothing
 
 # countall for a long string (3320882 bytes)
-               "."  591.6 μs  668.7 μs     x1.13     28950
-              "if"  355.9 μs    3.3 ms     x9.37      7775
-             "for"  326.6 μs    2.3 ms     x6.99      4496
-          "struct"  330.3 μs    1.6 ms     x4.74       825
-        "function"  336.2 μs    1.4 ms     x4.23      4620
-      "baremodule"  216.3 μs  949.9 μs     x4.39        16
-     "abracadabra"  257.4 μs  838.5 μs     x3.26         0
-"https://julialang.org/license"  241.8 μs  634.9 μs     x2.63       186
+               '.'  560.2 μs  511.5 μs     x0.91     28950
+               '='  711.9 μs  645.4 μs     x0.91     37374
+               "."  631.3 μs  639.4 μs     x1.01     28950
+              "if"  352.4 μs    3.2 ms     x9.03      7775
+             "for"  322.4 μs    2.2 ms     x6.75      4496
+          "struct"  319.0 μs    1.5 ms     x4.67       825
+        "function"  331.9 μs    1.4 ms     x4.13      4620
+      "baremodule"  215.2 μs  897.8 μs     x4.17        16
+     "abracadabra"  251.2 μs  798.4 μs     x3.18         0
+"https://julialang.org/license"  236.3 μs  607.5 μs     x2.57       186
 
 # countall for a low-complexity string (248956422 bytes)
-               "A"  583.3 ms  793.5 ms     x1.36  67070277
-             "AAA"  263.9 ms  947.6 ms     x3.59   8516543
-            "TATA"  151.4 ms  562.8 ms     x3.72   1263092
-          "GAATTC"  108.4 ms  459.2 ms     x4.24     67141
-       "CGTACGTAC"  116.8 ms  477.8 ms     x4.09        14
-     "GTTTTCCCCTC"  112.1 ms  197.7 ms     x1.76       131
-   "CCCCCCCCCCCCC"  113.9 ms  100.9 ms     x0.89       246
-"XXXXXXXXXXXXXXXX"   18.8 ms   32.7 ms     x1.73         0
+               'A'  656.3 ms  523.3 ms     x0.80  67070277
+               'N'  190.0 ms  153.4 ms     x0.81  18475410
+               "A"  791.9 ms  794.9 ms     x1.00  67070277
+             "AAA"  273.8 ms  906.7 ms     x3.31   8516543
+            "TATA"  147.8 ms  538.0 ms     x3.64   1263092
+          "GAATTC"  110.8 ms  434.7 ms     x3.92     67141
+       "CGTACGTAC"  120.5 ms  455.7 ms     x3.78        14
+     "GTTTTCCCCTC"  110.7 ms  189.8 ms     x1.71       131
+   "CCCCCCCCCCCCC"  114.3 ms   96.7 ms     x0.85       246
+"XXXXXXXXXXXXXXXX"   19.0 ms   31.6 ms     x1.66         0
 
 # -avx2 -forward
 
              Query        SS      Base     Ratio    Result
 
 # findfirst/last for a very short string (11 bytes)
-               "c"    6.1 ns   18.5 ns     x3.02       5:5
-              "ca"   15.7 ns   27.8 ns     x1.78       5:6
-             "cad"   15.6 ns   32.0 ns     x2.05       5:7
-            "cada"   16.3 ns   32.0 ns     x1.96       5:8
-           "cadab"   16.5 ns   33.8 ns     x2.05       5:9
-          "cadabr"   18.6 ns   34.3 ns     x1.85      5:10
-         "cadabra"   16.5 ns   34.8 ns     x2.11      5:11
-          "namnam"   17.9 ns   26.8 ns     x1.50   nothing
+               'a'    6.3 ns    9.4 ns     x1.49         1
+               'd'    6.3 ns    9.4 ns     x1.48         7
+               "c"    6.4 ns   14.2 ns     x2.22       5:5
+              "ca"   14.7 ns   28.6 ns     x1.95       5:6
+             "cad"   14.7 ns   32.1 ns     x2.19       5:7
+            "cada"   17.9 ns   32.7 ns     x1.83       5:8
+           "cadab"   17.9 ns   34.5 ns     x1.93       5:9
+          "cadabr"   17.8 ns   35.3 ns     x1.98      5:10
+         "cadabra"   23.5 ns   35.7 ns     x1.52      5:11
+          "namnam"   17.8 ns   27.5 ns     x1.55   nothing
 
 # findfirst/last for a short string (259 bytes)
-               "a"    6.6 ns   13.6 ns     x2.06       5:5
-              "be"   10.8 ns   90.2 ns     x8.38   115:116
-             "the"   12.3 ns   91.6 ns     x7.45   150:152
-            "code"   13.2 ns   98.3 ns     x7.46   188:191
-           "Julia"    8.0 ns   29.8 ns     x3.70       1:5
-        "language"   10.7 ns   42.9 ns     x4.01     49:56
-      "installing"   23.6 ns   93.4 ns     x3.96   235:244
-          "Python"   12.3 ns   93.5 ns     x7.63   nothing
+               'a'    6.0 ns    9.4 ns     x1.57         5
+               'G'    8.1 ns   10.5 ns     x1.30       154
+               "a"    6.0 ns   13.9 ns     x2.31       5:5
+              "be"   10.0 ns   93.3 ns     x9.35   115:116
+             "the"   11.1 ns   94.5 ns     x8.52   150:152
+            "code"   12.5 ns  100.9 ns     x8.10   188:191
+           "Julia"    8.2 ns   30.3 ns     x3.71       1:5
+        "language"    9.4 ns   43.3 ns     x4.62     49:56
+      "installing"   21.6 ns   95.0 ns     x4.40   235:244
+          "Python"   11.5 ns   94.8 ns     x8.26   nothing
 
 # countall for a long string (3320882 bytes)
-               "."  481.8 μs  679.6 μs     x1.41     28950
-              "if"  242.3 μs    2.7 ms    x11.10      7775
-             "for"  227.5 μs    2.3 ms     x9.93      4496
-          "struct"  234.8 μs    1.5 ms     x6.38       825
-        "function"  234.1 μs    1.5 ms     x6.29      4620
-      "baremodule"  138.6 μs    1.1 ms     x8.12        16
-     "abracadabra"  169.4 μs  733.5 μs     x4.33         0
-"https://julialang.org/license"  150.6 μs  702.4 μs     x4.66       186
+               '.'  517.9 μs  581.4 μs     x1.12     28950
+               '='  654.4 μs  741.4 μs     x1.13     37374
+               "."  475.3 μs  714.1 μs     x1.50     28950
+              "if"  220.0 μs    2.6 ms    x12.00      7775
+             "for"  203.7 μs    2.2 ms    x11.02      4496
+          "struct"  216.8 μs    1.5 ms     x6.79       825
+        "function"  211.6 μs    1.4 ms     x6.85      4620
+      "baremodule"  113.3 μs    1.1 ms     x9.87        16
+     "abracadabra"  150.2 μs  765.8 μs     x5.10         0
+"https://julialang.org/license"  133.6 μs  731.6 μs     x5.48       186
 
 # countall for a low-complexity string (248956422 bytes)
-               "A"  464.8 ms  929.2 ms     x2.00  67070277
-             "AAA"  179.9 ms  828.0 ms     x4.60   8516543
-            "TATA"   98.0 ms  511.9 ms     x5.22   1263092
-          "GAATTC"   70.3 ms  378.9 ms     x5.39     67141
-       "CGTACGTAC"   81.8 ms  454.4 ms     x5.55        14
-     "GTTTTCCCCTC"   71.8 ms  239.1 ms     x3.33       131
-   "CCCCCCCCCCCCC"   82.7 ms   99.9 ms     x1.21       246
-"XXXXXXXXXXXXXXXX"   14.5 ms   28.6 ms     x1.97         0
+               'A'  647.3 ms  662.7 ms     x1.02  67070277
+               'N'  175.9 ms  182.0 ms     x1.03  18475410
+               "A"  429.4 ms  961.2 ms     x2.24  67070277
+             "AAA"  181.5 ms  849.6 ms     x4.68   8516543
+            "TATA"   96.4 ms  507.0 ms     x5.26   1263092
+          "GAATTC"   72.0 ms  388.6 ms     x5.40     67141
+       "CGTACGTAC"   77.7 ms  447.5 ms     x5.76        14
+     "GTTTTCCCCTC"   73.9 ms  235.9 ms     x3.19       131
+   "CCCCCCCCCCCCC"   81.1 ms   98.7 ms     x1.22       246
+"XXXXXXXXXXXXXXXX"   13.2 ms   28.5 ms     x2.16         0
 
 # -noavx2 -forward
 
              Query        SS      Base     Ratio    Result
 
 # findfirst/last for a very short string (11 bytes)
-               "c"    6.5 ns   15.1 ns     x2.32       5:5
-              "ca"   15.5 ns   34.8 ns     x2.25       5:6
-             "cad"   15.5 ns   36.8 ns     x2.37       5:7
-            "cada"   16.0 ns   38.0 ns     x2.38       5:8
-           "cadab"   16.4 ns   38.8 ns     x2.36       5:9
-          "cadabr"   17.0 ns   41.0 ns     x2.41      5:10
-         "cadabra"   16.9 ns   41.3 ns     x2.44      5:11
-          "namnam"   19.4 ns   34.1 ns     x1.76   nothing
+               'a'    6.0 ns    8.9 ns     x1.48         1
+               'd'    6.1 ns    9.1 ns     x1.49         7
+               "c"    6.1 ns   13.8 ns     x2.26       5:5
+              "ca"   13.9 ns   27.1 ns     x1.95       5:6
+             "cad"   13.7 ns   31.0 ns     x2.25       5:7
+            "cada"   16.5 ns   31.8 ns     x1.93       5:8
+           "cadab"   16.5 ns   33.2 ns     x2.01       5:9
+          "cadabr"   16.6 ns   34.1 ns     x2.05      5:10
+         "cadabra"   16.6 ns   34.6 ns     x2.09      5:11
+          "namnam"   16.1 ns   27.2 ns     x1.69   nothing
 
 # findfirst/last for a short string (259 bytes)
-               "a"    6.9 ns   14.0 ns     x2.04       5:5
-              "be"   15.5 ns   95.8 ns     x6.17   115:116
-             "the"   18.0 ns   97.3 ns     x5.41   150:152
-            "code"   20.5 ns  105.9 ns     x5.16   188:191
-           "Julia"    8.5 ns   36.5 ns     x4.27       1:5
-        "language"   11.1 ns   47.0 ns     x4.24     49:56
-      "installing"   30.7 ns   96.0 ns     x3.13   235:244
-          "Python"   20.6 ns   96.1 ns     x4.66   nothing
+               'a'    5.7 ns    8.9 ns     x1.55         5
+               'G'    7.6 ns    9.9 ns     x1.31       154
+               "a"    5.7 ns   13.2 ns     x2.31       5:5
+              "be"   14.1 ns   89.6 ns     x6.35   115:116
+             "the"   16.6 ns   90.6 ns     x5.44   150:152
+            "code"   18.9 ns   96.4 ns     x5.11   188:191
+           "Julia"    7.5 ns   29.0 ns     x3.85       1:5
+        "language"   10.7 ns   41.5 ns     x3.88     49:56
+      "installing"   29.0 ns   90.4 ns     x3.12   235:244
+          "Python"   20.8 ns   91.1 ns     x4.38   nothing
 
 # countall for a long string (3320882 bytes)
-               "."  466.9 μs  676.4 μs     x1.45     28950
-              "if"  335.6 μs    2.5 ms     x7.53      7775
-             "for"  343.9 μs    2.3 ms     x6.61      4496
-          "struct"  340.4 μs    1.5 ms     x4.37       825
-        "function"  347.0 μs    1.5 ms     x4.18      4620
-      "baremodule"  256.1 μs    1.1 ms     x4.37        16
-     "abracadabra"  285.4 μs  774.7 μs     x2.71         0
-"https://julialang.org/license"  270.7 μs  734.3 μs     x2.71       186
+               '.'  494.2 μs  560.2 μs     x1.13     28950
+               '='  633.8 μs  703.4 μs     x1.11     37374
+               "."  454.8 μs  679.4 μs     x1.49     28950
+              "if"  327.1 μs    2.5 ms     x7.74      7775
+             "for"  320.0 μs    2.1 ms     x6.70      4496
+          "struct"  325.5 μs    1.4 ms     x4.31       825
+        "function"  327.2 μs    1.4 ms     x4.24      4620
+      "baremodule"  244.6 μs    1.1 ms     x4.36        16
+     "abracadabra"  275.8 μs  731.8 μs     x2.65         0
+"https://julialang.org/license"  262.1 μs  701.3 μs     x2.68       186
 
 # countall for a low-complexity string (248956422 bytes)
-               "A"  449.6 ms  938.8 ms     x2.09  67070277
-             "AAA"  230.7 ms  856.2 ms     x3.71   8516543
-            "TATA"  138.1 ms  510.2 ms     x3.69   1263092
-          "GAATTC"   98.6 ms  395.7 ms     x4.01     67141
-       "CGTACGTAC"  114.6 ms  454.8 ms     x3.97        14
-     "GTTTTCCCCTC"  105.1 ms  239.1 ms     x2.27       131
-   "CCCCCCCCCCCCC"  113.3 ms   99.9 ms     x0.88       246
-"XXXXXXXXXXXXXXXX"   34.8 ms   29.0 ms     x0.83         0
+               'A'  629.4 ms  650.8 ms     x1.03  67070277
+               'N'  170.8 ms  177.2 ms     x1.04  18475410
+               "A"  420.4 ms  923.4 ms     x2.20  67070277
+             "AAA"  218.9 ms  825.8 ms     x3.77   8516543
+            "TATA"  129.8 ms  486.2 ms     x3.74   1263092
+          "GAATTC"   98.3 ms  375.6 ms     x3.82     67141
+       "CGTACGTAC"  107.3 ms  433.5 ms     x4.04        14
+     "GTTTTCCCCTC"  101.5 ms  227.9 ms     x2.24       131
+   "CCCCCCCCCCCCC"  105.8 ms   95.1 ms     x0.90       246
+"XXXXXXXXXXXXXXXX"   22.1 ms   27.3 ms     x1.23         0
 
 
 Julia Version 1.6.0-rc1

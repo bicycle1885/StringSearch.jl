@@ -7,6 +7,18 @@ const AVX2 = Ref(CPUID.test_cpu_feature(CPUID.JL_X86_avx2))
 
 use_avx2() = AVX2[]
 
+# NOTE: You may need to GC.@preserve the referenced object.
+struct MemoryView
+    ptr::Ptr{UInt8}
+    len::Int
+end
+Base.length(mem::MemoryView) = mem.len
+Base.firstindex(mem::MemoryView) = 1
+Base.lastindex(mem::MemoryView) = mem.len
+Base.getindex(mem::MemoryView, i::Integer) = unsafe_load(mem.ptr + i - 1)
+
+MemoryView(s::Str) = MemoryView(pointer(s), sizeof(s))
+
 function findnext(a::Str, b::Str, i::Int)
     if i > lastindex(b) + 1
         return nothing
@@ -34,43 +46,48 @@ findprev(a::Str, b::Str, i::Integer) = findprev(a, b, Int(i))
 
 findlast(a::Str, b::Str) = findprev(a, b, lastindex(b))
 
-function search_forward(a::UInt8, b, s)
-    p = memchr(pointer(b) + s, a, ncodeunits(b) - s)
-    return p ≠ C_NULL ? Int(p - pointer(b)) : -1
+search_forward(a::Str, b::Str, s::Int) =
+    GC.@preserve a b search_forward(MemoryView(a), MemoryView(b), s)
+search_backward(a::Str, b::Str, s::Int) =
+    GC.@preserve a b search_backward(MemoryView(a), MemoryView(b), s)
+
+function search_forward(a::UInt8, b::MemoryView, s::Int)
+    p = memchr(b.ptr + s, a, length(b) - s)
+    return p ≠ C_NULL ? Int(p - b.ptr) : -1
 end
 
-function search_backward(a::UInt8, b, s)
-    p = memrchr(pointer(b), a, ncodeunits(b) - s)
-    return p ≠ C_NULL ? Int(p - pointer(b)) : -1
+function search_backward(a::UInt8, b::MemoryView, s::Int)
+    p = memrchr(b.ptr, a, length(b) - s)
+    return p ≠ C_NULL ? Int(p - b.ptr) : -1
 end
 
-function search_forward(a, b, s)
-    m = ncodeunits(a)
-    n = ncodeunits(b) - s
+function search_forward(a::MemoryView, b::MemoryView, s::Int)
+    m = length(a)
+    n = length(b) - s
     if m > n
         return -1
     elseif m == 0
         return s
     elseif m == 1
-        return search_forward(codeunit(a, 1), b, s)
+        return search_forward(a[begin], b, s)
     end
 
-    d = m - 1           # distance between registers
-    p = pointer(b) + s  # search position
-    p_end = p + n       # end position (exclusive)
+    d = m - 1      # displacement between registers
+    p = b.ptr + s  # search position
+    p_end = p + n  # end position (exclusive)
     if n < d + 16
-        # too short to use SIMD
+        # too short to use SIMD instructions
         while p + m - 1 < p_end
-            if memcmp(p, pointer(a), m) == 0
-                return Int(p - pointer(b))
+            if memcmp(p, a.ptr, m) == 0
+                return Int(p - b.ptr)
             end
             p += 1
         end
         return -1
     elseif n < d + 32 || !use_avx2()
-        # SSE2
-        F = set1_epi8_128(codeunit(a, 1))
-        L = set1_epi8_128(codeunit(a, m))
+        # use 16-byte registers
+        F = set1_epi8_128(a[begin])
+        L = set1_epi8_128(a[end])
         while true
             S = loadu_si128(p)
             T = loadu_si128(p + d)
@@ -78,12 +95,11 @@ function search_forward(a, b, s)
             while mask ≠ 0
                 i = trailing_zeros(mask)
                 # NOTE: we already know that the first and the last byte are matching
-                if memcmp(p + i + 1, pointer(a) + 1, m - 2) == 0
-                    return Int(p + i - pointer(b))
+                if memcmp(p + i + 1, a.ptr + 1, m - 2) == 0
+                    return Int(p + i - b.ptr)
                 end
                 mask &= mask - 1
             end
-            # 16 is the width of registers in bytes
             rem = p_end - (p + d + 16)
             if rem < 16
                 p += rem
@@ -99,16 +115,16 @@ function search_forward(a, b, s)
         mask = movemask_epi8(and_si128(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
         while mask ≠ 0
             i = trailing_zeros(mask)
-            if memcmp(p + i + 1, pointer(a) + 1, m - 2) == 0
-                return Int(p + i - pointer(b))
+            if memcmp(p + i + 1, a.ptr + 1, m - 2) == 0
+                return Int(p + i - b.ptr)
             end
             mask &= mask - 1
         end
         return -1
     else
-        # AVX2
-        F = set1_epi8_256(codeunit(a, 1))
-        L = set1_epi8_256(codeunit(a, m))
+        # use 32-byte registers
+        F = set1_epi8_256(a[begin])
+        L = set1_epi8_256(a[end])
         while true
             S = loadu_si256(p)
             T = loadu_si256(p + d)
@@ -116,12 +132,11 @@ function search_forward(a, b, s)
             while mask ≠ 0
                 i = trailing_zeros(mask)
                 # NOTE: we already know that the first and the last byte are matching
-                if memcmp(p + i + 1, pointer(a) + 1, m - 2) == 0
-                    return Int(p + i - pointer(b))
+                if memcmp(p + i + 1, a.ptr + 1, m - 2) == 0
+                    return Int(p + i - b.ptr)
                 end
                 mask &= mask - 1
             end
-            # 32 is the width of registers in bytes
             rem = p_end - (p + d + 32)
             if rem < 32
                 p += rem
@@ -137,8 +152,8 @@ function search_forward(a, b, s)
         mask = movemask_epi8(and_si256(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
         while mask ≠ 0
             i = trailing_zeros(mask)
-            if memcmp(p + i + 1, pointer(a) + 1, m - 2) == 0
-                return Int(p + i - pointer(b))
+            if memcmp(p + i + 1, a.ptr + 1, m - 2) == 0
+                return Int(p + i - b.ptr)
             end
             mask &= mask - 1
         end
@@ -146,68 +161,67 @@ function search_forward(a, b, s)
     end
 end
 
-function search_backward(a, b, s)
-    m = ncodeunits(a)
-    n = ncodeunits(b) - s
+function search_backward(a::MemoryView, b::MemoryView, s::Int)
+    m = length(a)
+    n = length(b) - s
     if n < m
         return -1
     elseif m == 0
         return s
     elseif m == 1
-        return search_backward(codeunit(a, 1), b, s)
+        return search_backward(a[begin], b, s)
     end
 
-    d = m - 1  # distance between registers
+    d = m - 1  # displacement between registers
     if n < d + 16
-        # too short to use SIMD
-        p = pointer(b) + n - m
-        while p ≥ pointer(b)
-            if memcmp(p, pointer(a), m) == 0
-                return Int(p - pointer(b))
+        # too short to use SIMD instructions
+        p = b.ptr + n - m
+        while p ≥ b.ptr
+            if memcmp(p, a.ptr, m) == 0
+                return Int(p - b.ptr)
             end
             p -= 1
         end
         return -1
     elseif n < d + 32 || !use_avx2()
-        # SSE2
-        w = 16
-        F = set1_epi8_128(codeunit(a, 1))
-        L = set1_epi8_128(codeunit(a, m))
-        p = pointer(b) + n - w - d
+        # use 16-byte registers
+        F = set1_epi8_128(a[begin])
+        L = set1_epi8_128(a[end])
+        p = b.ptr + n - 16 - d
         while true
             S = loadu_si128(p)
             T = loadu_si128(p + d)
             mask = movemask_epi8(and_si128(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
             while mask ≠ 0
                 i = sizeof(mask) * 8 - leading_zeros(mask) - 1
-                if memcmp(pointer(a) + 1, p + i + 1, m - 2) == 0
-                    return Int(p + i - pointer(b))
+                if memcmp(a.ptr + 1, p + i + 1, m - 2) == 0
+                    return Int(p + i - b.ptr)
                 end
                 mask ⊻= 1 << i
             end
-            step = min(w, p - pointer(b))
+            step = min(16, p - b.ptr)
             if step == 0
                 return -1
             end
             p -= step
         end
     else
-        # AVX2
-        F = set1_epi8_256(codeunit(a, 1))
-        L = set1_epi8_256(codeunit(a, m))
-        p = pointer(b) + n - 32 - d
+        # use 32-byte registers
+        F = set1_epi8_256(a[begin])
+        L = set1_epi8_256(a[end])
+        p = b.ptr + n - 32 - d
         while true
             S = loadu_si256(p)
             T = loadu_si256(p + d)
             mask = movemask_epi8(and_si256(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
             while mask ≠ 0
                 i = sizeof(mask) * 8 - leading_zeros(mask) - 1
-                if memcmp(pointer(a) + 1, p + i + 1, m - 2) == 0
-                    return Int(p + i - pointer(b))
+                if memcmp(a.ptr + 1, p + i + 1, m - 2) == 0
+                    return Int(p + i - b.ptr)
                 end
                 mask ⊻= 1 << i
             end
-            rem = p - pointer(b)
+            rem = p - b.ptr
             if rem < 32
                 p -= rem
                 break
@@ -219,8 +233,8 @@ function search_backward(a, b, s)
         mask = movemask_epi8(and_si256(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
         while mask ≠ 0
             i = sizeof(mask) * 8 - leading_zeros(mask) - 1
-            if memcmp(pointer(a) + 1, p + i + 1, m - 2) == 0
-                return Int(p + i - pointer(b))
+            if memcmp(a.ptr + 1, p + i + 1, m - 2) == 0
+                return Int(p + i - b.ptr)
             end
             mask ⊻= 1 << i
         end

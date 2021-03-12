@@ -1,11 +1,70 @@
 module StringSearch
 
-using Base.BinaryPlatforms: CPUID
+using Base: Fix2, BinaryPlatforms, first_utf8_byte
 
 const Str = Union{String,SubString{String}}
-const AVX2 = Ref(CPUID.test_cpu_feature(CPUID.JL_X86_avx2))
 
-use_avx2() = AVX2[]
+function findnext(pred::Fix2{<:Union{typeof(isequal),typeof(==)},<:AbstractChar}, b::Str, i::Int)
+    i = max(i, firstindex(b))
+    a = pred.x
+    probe = first_utf8_byte(a)
+    while true
+        offset = search_forward(probe, b, i - 1)
+        if offset < 0
+            return nothing
+        elseif pred(b[offset+1])
+            return offset + 1
+        else
+            i = nextind(b, i)
+        end
+    end
+end
+
+findnext(c::AbstractChar, b::Str, i::Int) = findnext(==(c), b, i)
+
+function findnext(a::Str, b::Str, i::Int)
+    i = max(i, firstindex(b))
+    offset = search_forward(a, b, i - 1)
+    return offset ≥ 0 ? (offset+1:offset+lastindex(a)) : nothing
+end
+
+findnext(a::Str, b::Str, i::Integer) = findnext(a, b, Int(i))
+
+findfirst(a, b) = findnext(a, b, firstindex(b))
+
+function findprev(pred::Fix2{<:Union{typeof(isequal),typeof(==)},<:AbstractChar}, b::String, i::Int)
+    i < 0 && return nothing
+    n = ncodeunits(b)
+    a = pred.x
+    probe = first_utf8_byte(a)
+    while true
+        offset = search_backward(probe, b, n + 1 - nextind(b, min(i, n)))
+        if offset < 0
+            return nothing
+        elseif pred(b[offset+1])
+            return offset + 1
+        else
+            i = prevind(b, i)
+        end
+    end
+end
+
+findprev(c::AbstractChar, b::Str, i::Int) = findprev(==(c), b, i)
+
+function findprev(a::Str, b::Str, i::Int)
+    i < 0 && return nothing
+    n = ncodeunits(b)
+    offset = search_backward(a, b, n + 1 - nextind(b, min(i, n)))
+    return offset ≥ 0 ? (offset+1:offset+lastindex(a)) : nothing
+end
+
+findprev(a::Str, b::Str, i::Integer) = findprev(a, b, Int(i))
+
+findlast(a, b) = findprev(a, b, lastindex(b))
+
+
+# MemoryView
+# ----------
 
 # NOTE: You may need to GC.@preserve the referenced object.
 struct MemoryView
@@ -19,29 +78,21 @@ Base.getindex(mem::MemoryView, i::Integer) = unsafe_load(mem.ptr + i - 1)
 
 MemoryView(s::Str) = MemoryView(pointer(s), sizeof(s))
 
-function findnext(a::Str, b::Str, i::Int)
-    i = max(i, firstindex(b))
-    offset = search_forward(a, b, i - 1)
-    return offset ≥ 0 ? (offset+1:offset+lastindex(a)) : nothing
-end
 
-findnext(a::Str, b::Str, i::Integer) = findnext(a, b, Int(i))
+# Search Functions
+# ----------------
 
-findfirst(a::Str, b::Str) = findnext(a, b, firstindex(b))
+const AVX2 = Ref(BinaryPlatforms.CPUID.test_cpu_feature(BinaryPlatforms.CPUID.JL_X86_avx2))
 
-function findprev(a::Str, b::Str, i::Int)
-    i < 0 && return nothing
-    n = ncodeunits(b)
-    offset = search_backward(a, b, n + 1 - nextind(b, min(i, n)))
-    return offset ≥ 0 ? (offset+1:offset+lastindex(a)) : nothing
-end
+use_avx2() = AVX2[]
 
-findprev(a::Str, b::Str, i::Integer) = findprev(a, b, Int(i))
-
-findlast(a::Str, b::Str) = findprev(a, b, lastindex(b))
-
+search_forward(a::UInt8, b::Str, s::Int) =
+    GC.@preserve b search_forward(a, MemoryView(b), s)
 search_forward(a::Str, b::Str, s::Int) =
     GC.@preserve a b search_forward(MemoryView(a), MemoryView(b), s)
+
+search_backward(a::UInt8, b::Str, s::Int) =
+    GC.@preserve b search_backward(a, MemoryView(b), s)
 search_backward(a::Str, b::Str, s::Int) =
     GC.@preserve a b search_backward(MemoryView(a), MemoryView(b), s)
 
@@ -326,8 +377,5 @@ function movemask_epi8(x::U8x32)
     ret i64 %4
     """, Int64, Tuple{U8x32}, x)
 end
-
-# For debugging
-v2s(x::Union{U8x16,U8x32}) = String([Char(b.value) for b in x])
 
 end

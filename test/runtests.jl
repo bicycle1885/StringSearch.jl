@@ -3,6 +3,17 @@ using Test
 
 @testset "StringSearch.jl" begin
     b = "abracadabra"  # 11 bytes
+
+    @test findfirst('a', b) == 1
+    @test findfirst('b', b) == 2
+    @test findfirst('c', b) == 5
+    @test findfirst('z', b) === nothing
+
+    @test findfirst(==('a'), b) == 1
+    @test findfirst(==('b'), b) == 2
+    @test findfirst(==('c'), b) == 5
+    @test findfirst(==('z'), b) === nothing
+
     @test findfirst("", b) == 1:0
     @test findfirst("a", b) == 1:1
     @test findfirst("b", b) == 2:2
@@ -12,6 +23,16 @@ using Test
     @test findfirst("abracadabra", b) == 1:11
     @test findnext("abra", b, 1) == 1:4
     @test findnext("abra", b, 2) == 8:11
+
+    @test findlast('a', b) == 11
+    @test findlast('b', b) == 9
+    @test findlast('c', b) == 5
+    @test findlast('z', b) === nothing
+
+    @test findlast(==('a'), b) == 11
+    @test findlast(==('b'), b) == 9
+    @test findlast(==('c'), b) == 5
+    @test findlast(==('z'), b) === nothing
 
     @test findlast("a", b) == 11:11
     @test findlast("abra", b) == 8:11
@@ -50,12 +71,23 @@ using Test
     end
 
     b = "Julia言語"
+
+    @test findfirst(==('J'), b) === 1
+    @test findfirst(==('u'), b) === 2
+    @test findfirst(==('言'), b) === 6
+    @test findfirst(==('語'), b) === 9
+
     @test findfirst("Julia", b) === 1:5
     @test findnext("Julia", b, 2) === nothing
     @test findfirst("言語", b) === 6:9
     @test findnext("言語", b, 2) === 6:9
     @test findnext("言語", b, 6) === 6:9
     @test findnext("言語", b, 7) === nothing
+
+    @test findlast(==('J'), b) === 1
+    @test findlast(==('u'), b) === 2
+    @test findlast(==('言'), b) === 6
+    @test findlast(==('語'), b) === 9
 
     @test findlast("Julia", b) === 1:5
     @test findlast("言語", b) === 6:9

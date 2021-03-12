@@ -113,6 +113,83 @@ end
     # Taken from: https://github.com/JuliaLang/julia/blob/b4c79e76fb699cf67d0e6b14ecfa75b1aaca923f/test/strings/search.jl
     # License is MIT: https://julialang.org/license
 
+    # some test strings
+    astr = "Hello, world.\n"
+    u8str = "∀ ε > 0, ∃ δ > 0: |x-y| < δ ⇒ |f(x)-f(y)| < ε"
+
+    # string forward search with a single-char string
+    @test findfirst("x", astr) == nothing
+    @test findfirst("H", astr) == 1:1
+    @test findnext("H", astr, 2) == nothing
+    @test findfirst("l", astr) == 3:3
+    @test findnext("l", astr, 4) == 4:4
+    @test findnext("l", astr, 5) == 11:11
+    @test findnext("l", astr, 12) == nothing
+    @test findfirst("\n", astr) == 14:14
+    @test findnext("\n", astr, 15) == nothing
+
+    @test findfirst("z", u8str) == nothing
+    @test findfirst("∄", u8str) == nothing
+    @test findfirst("∀", u8str) == 1:1
+    @test findnext("∀", u8str, 4) == nothing
+    @test findfirst("∃", u8str) == 13:13
+    @test findnext("∃", u8str, 16) == nothing
+    @test findfirst("x", u8str) == 26:26
+    @test findnext("x", u8str, 27) == 43:43
+    @test findnext("x", u8str, 44) == nothing
+    @test findfirst("ε", u8str) == 5:5
+    @test findnext("ε", u8str, 7) == 54:54
+    @test findnext("ε", u8str, 56) == nothing
+
+    # strifindprev  backward search with a single-char string
+    @test findlast("x", astr) == nothing
+    @test findlast("H", astr) == 1:1
+    @test findprev("H", astr, 2) == 1:1
+    @test findprev("H", astr, 0) == nothing
+    @test findlast("l", astr) == 11:11
+    @test findprev("l", astr, 10) == 4:4
+    @test findprev("l", astr, 4) == 4:4
+    @test findprev("l", astr, 3) == 3:3
+    @test findprev("l", astr, 2) == nothing
+    @test findlast("\n", astr) == 14:14
+    @test findprev("\n", astr, 13) == nothing
+
+    @test findlast("z", u8str) == nothing
+    @test findlast("∄", u8str) == nothing
+    @test findlast("∀", u8str) == 1:1
+    @test findprev("∀", u8str, 0) == nothing
+    #TODO: setting the limit in the middle of a wide char
+    #      makes findnext fail but findprev succeed.
+    #      Should findprev fail as well?
+    #@test findprev("∀", u8str, 2) == nothing # gives 1:3
+    @test findlast("∃", u8str) == 13:13
+    @test findprev("∃", u8str, 12) == nothing
+    @test findlast("x", u8str) == 43:43
+    @test findprev("x", u8str, 42) == 26:26
+    @test findprev("x", u8str, 25) == nothing
+    @test findlast("ε", u8str) == 54:54
+    @test findprev("ε", u8str, 53) == 5:5
+    @test findprev("ε", u8str, 4) == nothing
+
+    # string forward search with a zero-char string
+    for i = 1:lastindex(astr)
+        @test findnext("", astr, i) == i:i-1
+    end
+    for i = 1:lastindex(u8str)
+        @test findnext("", u8str, i) == i:i-1
+    end
+    @test findfirst("", "") === 1:0
+
+
+    # string backward search with a zero-char string
+    for i = 1:lastindex(astr)
+        @test findprev("", astr, i) == i:i-1
+    end
+    for i = 1:lastindex(u8str)
+        @test findprev("", u8str, i) == i:i-1
+    end
+    @test findlast("", "") === 1:0
+
     # string forward search with a two-char string literal
     @test findfirst("xx", "foo,bar,baz") == nothing
     @test findfirst("fo", "foo,bar,baz") == 1:2
@@ -147,4 +224,38 @@ end
     # string forward search with a two-char UTF-8 (4 byte) string literal
     @test findfirst("\U1f596\U1f596", "\U1f596\U1f596") == 1:5
     @test findnext("\U1f596\U1f596", "\U1f596\U1f596", 1) == 1:5
+
+    # string backward search with a two-char UTF-8 (2 byte) string literal
+    @test findlast("éé", "ééé") == 3:5
+    @test findprev("éé", "ééé", lastindex("ééé")) == 3:5
+    # string backward search with a two-char UTF-8 (3 byte) string literal
+    @test findlast("€€", "€€€") == 4:7
+    @test findprev("€€", "€€€", lastindex("€€€")) == 4:7
+    # string backward search with a two-char UTF-8 (4 byte) string literal
+    @test findlast("\U1f596\U1f596", "\U1f596\U1f596\U1f596") == 5:9
+    @test findprev("\U1f596\U1f596", "\U1f596\U1f596\U1f596", lastindex("\U1f596\U1f596\U1f596")) == 5:9
+
+    # string backward search with a two-char UTF-8 (2 byte) string literal
+    @test findlast("éé", "éé") == 1:3        # should really be 1:4!
+    @test findprev("éé", "éé", lastindex("ééé")) == 1:3
+    # string backward search with a two-char UTF-8 (3 byte) string literal
+    @test findlast("€€", "€€") == 1:4        # should really be 1:6!
+    @test findprev("€€", "€€", lastindex("€€€")) == 1:4
+    # string backward search with a two-char UTF-8 (4 byte) string literal
+    @test findlast("\U1f596\U1f596", "\U1f596\U1f596") == 1:5        # should really be 1:8!
+    @test findprev("\U1f596\U1f596", "\U1f596\U1f596", lastindex("\U1f596\U1f596\U1f596")) == 1:5
+
+    # string backward search with a two-char string literal
+    @test findlast("xx", "foo,bar,baz") == nothing
+    @test findlast("fo", "foo,bar,baz") == 1:2
+    @test findprev("fo", "foo,bar,baz", 1) == nothing
+    @test findlast("oo", "foo,bar,baz") == 2:3
+    @test findprev("oo", "foo,bar,baz", 2) == nothing
+    @test findlast("o,", "foo,bar,baz") == 3:4
+    @test findprev("o,", "foo,bar,baz", 1) == nothing
+    @test findlast(",b", "foo,bar,baz") == 8:9
+    @test findprev(",b", "foo,bar,baz", 6) == 4:5
+    @test findprev(",b", "foo,bar,baz", 3) == nothing
+    @test findlast("az", "foo,bar,baz") == 10:11
+    @test findprev("az", "foo,bar,baz", 10) == nothing
 end

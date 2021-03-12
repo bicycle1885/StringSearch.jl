@@ -54,6 +54,15 @@ else
     @info "backward search mode"
 end
 
+# short query only
+const short = "-short" ∈ ARGS
+
+# quick benchmark
+if "-quick" ∈ ARGS
+    BenchmarkTools.DEFAULT_PARAMETERS.samples = 1000
+    BenchmarkTools.DEFAULT_PARAMETERS.seconds = 1.0
+end
+
 if forward
     function countall(findnext, a, b)
         n = 0
@@ -96,6 +105,7 @@ b = "abracadabra"
 println()
 println("# findfirst/last for a very short string ($(sizeof(b)) bytes)")
 for a in ["c", "ca", "cad", "cada", "cadab", "cadabr", "cadabra", "namnam"]
+    short && sizeof(a) > 3 && continue
     if forward
         benchmark_findfirst(a, b)
     else
@@ -109,6 +119,7 @@ Julia is a high-level, high-performance dynamic language for technical computing
 println()
 println("# findfirst/last for a short string ($(sizeof(b)) bytes)")
 for a in ["a", "be", "the", "code", "Julia", "language", "installing", "Python"]
+    short && sizeof(a) > 3 && continue
     if forward
         benchmark_findfirst(a, b)
     else
@@ -121,6 +132,7 @@ if isfile("base.txt.zst")
     println()
     println("# countall for a long string ($(sizeof(b)) bytes)")
     for a in [".", "if", "for", "struct", "function", "baremodule", "abracadabra", "https://julialang.org/license"]
+        short && sizeof(a) > 3 && continue
         benchmark_countall(a, b)
     end
 end
@@ -130,6 +142,7 @@ if isfile("chr1.txt.zst")
     println()
     println("# countall for a low-complexity string ($(sizeof(b)) bytes)")
     for a in ["A", "AAA", "TATA", "GAATTC", "CGTACGTAC", "GTTTTCCCCTC", "CCCCCCCCCCCCC", "XXXXXXXXXXXXXXXX"]
+        short && sizeof(a) > 3 && continue
         benchmark_countall(a, b)
     end
 end

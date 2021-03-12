@@ -32,13 +32,14 @@ findnext(a::Str, b::Str, i::Integer) = findnext(a, b, Int(i))
 
 findfirst(a, b) = findnext(a, b, firstindex(b))
 
-function findprev(pred::Fix2{<:Union{typeof(isequal),typeof(==)},<:AbstractChar}, b::String, i::Int)
+function findprev(pred::Fix2{<:Union{typeof(isequal),typeof(==)},<:AbstractChar}, b::Str, i::Int)
     i < 0 && return nothing
     n = ncodeunits(b)
+    i = nextind(b, min(i, n))
     a = pred.x
     probe = first_utf8_byte(a)
     while true
-        offset = search_backward(probe, b, n + 1 - nextind(b, min(i, n)))
+        offset = search_backward(probe, b, n + 1 - i)
         if offset < 0
             return nothing
         elseif pred(b[offset+1])

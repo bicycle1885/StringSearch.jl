@@ -1,7 +1,9 @@
 module StringSearch
 
+using Base.BinaryPlatforms: CPUID
+
 const Str = Union{String,SubString{String}}
-const AVX2 = Ref(true)
+const AVX2 = Ref(CPUID.test_cpu_feature(CPUID.JL_X86_avx2))
 
 use_avx2() = AVX2[]
 

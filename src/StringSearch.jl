@@ -12,11 +12,13 @@ in(::AbstractString, ::AbstractString) = error("use occursin(x, y) for string co
 findfirst(a, b) = findnext(a, b, firstindex(b))
 findlast(a, b) = findprev(a, b, lastindex(b))
 
-# This may cause infinite recursive calls and result in StackOverflowError.
-findnext(a, b, i::Integer) = findnext(a, b, Int(i))
-findprev(a, b, i::Integer) = findprev(a, b, Int(i))
+findnext(a::Union{Function,AbstractString,AbstractVector{<:Union{Int8,UInt8}}}, b::Union{AbstractString,AbstractVector{<:Union{Int8,UInt8}}}, i::Integer) = findnext(a, b, Int(i))
+findprev(a::Union{Function,AbstractString,AbstractVector{<:Union{Int8,UInt8}}}, b::Union{AbstractString,AbstractVector{<:Union{Int8,UInt8}}}, i::Integer) = findprev(a, b, Int(i))
 
-function findnext(p::Function, b::Union{AbstractString,AbstractVector}, i::Int)
+findnext(a::AbstractChar, b::AbstractString, i::Integer) = findprev(a, b, Int(i))
+findprev(a::AbstractChar, b::AbstractString, i::Integer) = findprev(a, b, Int(i))
+
+function findnext(p::Function, b::Union{AbstractString,AbstractVector{<:Union{Int8,UInt8}}}, i::Int)
     i = max(i, firstindex(b))
     last = lastindex(b)
     @inbounds while i ≤ last
@@ -26,7 +28,7 @@ function findnext(p::Function, b::Union{AbstractString,AbstractVector}, i::Int)
     return nothing
 end
 
-function findprev(p::Function, b::Union{AbstractString,AbstractVector}, i::Int)
+function findprev(p::Function, b::Union{AbstractString,AbstractVector{<:Union{Int8,UInt8}}}, i::Int)
     i = min(i, lastindex(b))
     first = firstindex(b)
     @inbounds while i ≥ first

@@ -107,6 +107,11 @@ function search_backward(a::UInt8, b::MemoryView, s::Int)
     return p ≠ C_NULL ? Int(p - b.ptr) : -1
 end
 
+# The following algorithm is based on this article:
+# SIMD-friendly algorithms for substring searching, Wojciech Muła
+# http://0x80.pl/articles/simd-strfind.html
+
+# a: needle, b: haystack, s: # of bytes ignored from the head of the haystack (nonnegative)
 function search_forward(a::MemoryView, b::MemoryView, s::Int)
     m = length(a)
     n = length(b) - s
@@ -140,7 +145,6 @@ function search_forward(a::MemoryView, b::MemoryView, s::Int)
             mask = movemask_epi8(and_si128(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
             while mask ≠ 0
                 i = trailing_zeros(mask)
-                # NOTE: we already know that the first and the last byte are matching
                 if memcmp(p + i + 1, a.ptr + 1, m - 2) == 0
                     return Int(p + i - b.ptr)
                 end
@@ -153,9 +157,6 @@ function search_forward(a::MemoryView, b::MemoryView, s::Int)
             end
             p += 16
         end
-        # Putting the following part inside the main loop above makes code
-        # clean but it seems to have a significant negative impact on the
-        # performance on Zen2, probably due to variable step size.
         S = loadu_si128(p)
         T = loadu_si128(p + d)
         mask = movemask_epi8(and_si128(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
@@ -207,6 +208,7 @@ function search_forward(a::MemoryView, b::MemoryView, s::Int)
     end
 end
 
+# a: needle, b: haystack, s: # of bytes ignored from the tail of the haystack (nonnegative)
 function search_backward(a::MemoryView, b::MemoryView, s::Int)
     m = length(a)
     n = length(b) - s
@@ -301,8 +303,8 @@ function search_backward(a::MemoryView, b::MemoryView, s::Int)
 end
 
 
-# Low-level code
-# --------------
+# Low-level operations
+# --------------------
 
 memcmp(p, q, n) = ccall(:memcmp, Cint, (Ptr{UInt8}, Ptr{UInt8}, Csize_t), p, q, n)
 memchr(p, c, n) = ccall(:memchr, Ptr{UInt8}, (Ptr{UInt8}, Cint, Csize_t), p, c, n)

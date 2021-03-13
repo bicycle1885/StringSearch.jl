@@ -188,10 +188,10 @@ MemoryView(s::Vector{<:Union{Int8,UInt8}}) = MemoryView(pointer(s), sizeof(s))
 #
 #   1. the needle (`a`)
 #   2. the haystack (`b`)
-#   3. the number of bytes ignored from the edge of the haystack (`s`)
+#   3. the number of bytes ignored from the edge of the haystack (`k`)
 #
-# `search_forward` ignores `s` bytes from the head of the haystack and
-# `search_backward` does from the tail of it. The `s` argument must be
+# `search_forward` ignores `k` bytes from the head of the haystack and
+# `search_backward` does from the tail of it. The `k` argument must be
 # nonnegative, but it is allowed to be larger than the length of `b`. The
 # functions return a zero-based offset of the matching position if any matching
 # position is found. Thus, the caller will need to add `firstindex(b)` to the
@@ -202,33 +202,33 @@ const AVX2 = Ref(BinaryPlatforms.CPUID.test_cpu_feature(BinaryPlatforms.CPUID.JL
 
 use_avx2() = AVX2[]
 
-search_forward(a::UInt8, b::Str, s::Int) =
-    GC.@preserve b search_forward(a, MemoryView(b), s)
-search_forward(a::Str, b::Str, s::Int) =
-    GC.@preserve a b search_forward(MemoryView(a), MemoryView(b), s)
+search_forward(a::UInt8, b::Str, k::Int) =
+    GC.@preserve b search_forward(a, MemoryView(b), k)
+search_forward(a::Str, b::Str, k::Int) =
+    GC.@preserve a b search_forward(MemoryView(a), MemoryView(b), k)
 
-search_backward(a::UInt8, b::Str, s::Int) =
-    GC.@preserve b search_backward(a, MemoryView(b), s)
-search_backward(a::Str, b::Str, s::Int) =
-    GC.@preserve a b search_backward(MemoryView(a), MemoryView(b), s)
+search_backward(a::UInt8, b::Str, k::Int) =
+    GC.@preserve b search_backward(a, MemoryView(b), k)
+search_backward(a::Str, b::Str, k::Int) =
+    GC.@preserve a b search_backward(MemoryView(a), MemoryView(b), k)
 
-search_forward(a::T, b::Vector{T}, s::Int) where T <: Union{Int8,UInt8} =
-    GC.@preserve b search_forward(a, MemoryView(b), s)
-search_forward(a::Vector{T}, b::Vector{T}, s::Int) where T<: Union{Int8,UInt8} =
-    GC.@preserve a b search_forward(MemoryView(a), MemoryView(b), s)
+search_forward(a::T, b::Vector{T}, k::Int) where T <: Union{Int8,UInt8} =
+    GC.@preserve b search_forward(a, MemoryView(b), k)
+search_forward(a::Vector{T}, b::Vector{T}, k::Int) where T<: Union{Int8,UInt8} =
+    GC.@preserve a b search_forward(MemoryView(a), MemoryView(b), k)
 
-search_backward(a::T, b::Vector{T}, s::Int) where T <: Union{Int8,UInt8} =
-    GC.@preserve b search_backward(a, MemoryView(b), s)
-search_backward(a::Vector{T}, b::Vector{T}, s::Int) where T<: Union{Int8,UInt8} =
-    GC.@preserve a b search_backward(MemoryView(a), MemoryView(b), s)
+search_backward(a::T, b::Vector{T}, k::Int) where T <: Union{Int8,UInt8} =
+    GC.@preserve b search_backward(a, MemoryView(b), k)
+search_backward(a::Vector{T}, b::Vector{T}, k::Int) where T<: Union{Int8,UInt8} =
+    GC.@preserve a b search_backward(MemoryView(a), MemoryView(b), k)
 
-function search_forward(a::UInt8, b::MemoryView, s::Int)
-    p = memchr(b.ptr + s, a, length(b) - s)
+function search_forward(a::UInt8, b::MemoryView, k::Int)
+    p = memchr(b.ptr + k, a, length(b) - k)
     return p ≠ C_NULL ? Int(p - b.ptr) : -1
 end
 
-function search_backward(a::UInt8, b::MemoryView, s::Int)
-    p = memrchr(b.ptr, a, length(b) - s)
+function search_backward(a::UInt8, b::MemoryView, k::Int)
+    p = memrchr(b.ptr, a, length(b) - k)
     return p ≠ C_NULL ? Int(p - b.ptr) : -1
 end
 
@@ -236,19 +236,19 @@ end
 # SIMD-friendly algorithms for substring searching, Wojciech Muła
 # http://0x80.pl/articles/simd-strfind.html
 
-function search_forward(a::MemoryView, b::MemoryView, s::Int)
+function search_forward(a::MemoryView, b::MemoryView, k::Int)
     m = length(a)
-    n = length(b) - s
+    n = length(b) - k
     if m > n
         return -1
     elseif m == 0
-        return s
+        return k
     elseif m == 1
-        return search_forward(a[begin], b, s)
+        return search_forward(a[begin], b, k)
     end
 
     d = m - 1      # displacement between registers
-    p = b.ptr + s  # search position
+    p = b.ptr + k  # search position
     p_end = p + n  # end position (exclusive)
     if n < d + 16
         # too short to use SIMD instructions
@@ -332,15 +332,15 @@ function search_forward(a::MemoryView, b::MemoryView, s::Int)
     end
 end
 
-function search_backward(a::MemoryView, b::MemoryView, s::Int)
+function search_backward(a::MemoryView, b::MemoryView, k::Int)
     m = length(a)
-    n = length(b) - s
+    n = length(b) - k
     if n < m
         return -1
     elseif m == 0
-        return s
+        return k
     elseif m == 1
-        return search_backward(a[begin], b, s)
+        return search_backward(a[begin], b, k)
     end
 
     d = m - 1  # displacement between registers
@@ -425,13 +425,13 @@ function search_backward(a::MemoryView, b::MemoryView, s::Int)
     end
 end
 
-function search_forward(a::AbstractByteVector, b::AbstractByteVector, s::Int)
+function search_forward(a::AbstractByteVector, b::AbstractByteVector, k::Int)
     m = length(a)
-    n = length(b) - s
+    n = length(b) - k
     if m > n
         return -1
     elseif m == 0
-        return s
+        return k
     end
 
     # preprocess
@@ -447,7 +447,7 @@ function search_forward(a::AbstractByteVector, b::AbstractByteVector, s::Int)
 
     # main loop
     last = lastindex(b)
-    p = firstindex(b) + s
+    p = firstindex(b) + k
     while p + m - 1 ≤ last
         if a_end == b[p+m-1]
             # the last byte is matching
@@ -474,13 +474,13 @@ function search_forward(a::AbstractByteVector, b::AbstractByteVector, s::Int)
     return -1
 end
 
-function search_backward(a::AbstractByteVector, b::AbstractByteVector, s::Int)
+function search_backward(a::AbstractByteVector, b::AbstractByteVector, k::Int)
     m = length(a)
-    n = length(b) - s
+    n = length(b) - k
     if m > n
         return -1
     elseif m == 0
-        return s
+        return k
     end
 
     # preprocess
@@ -496,7 +496,7 @@ function search_backward(a::AbstractByteVector, b::AbstractByteVector, s::Int)
 
     # main loop
     first = firstindex(b)
-    p = lastindex(b) + 1 - (m + s)
+    p = lastindex(b) + 1 - (m + k)
     while p ≥ firstindex(b)
         if a_begin == b[p]
             # the first byte is matching

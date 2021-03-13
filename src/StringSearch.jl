@@ -3,7 +3,7 @@ module StringSearch
 using Base: Fix2, BinaryPlatforms, first_utf8_byte
 
 
-# Generic methods
+# Generic Methods
 # ---------------
 
 const AbstractByteVector = AbstractVector{<:Union{Int8,UInt8}}
@@ -75,7 +75,7 @@ function findprev(a::AbstractByteVector, b::AbstractByteVector, i::Int)
 end
 
 
-# Specialized methods
+# Specialized Methods
 # -------------------
 
 const Str = Union{String,SubString{String}}
@@ -183,6 +183,21 @@ MemoryView(s::Vector{<:Union{Int8,UInt8}}) = MemoryView(pointer(s), sizeof(s))
 # Search Functions
 # ----------------
 
+# The `search_forward` and `search_backward` function take following three
+# arguments:
+#
+#   1. the needle (`a`)
+#   2. the haystack (`b`)
+#   3. the number of bytes ignored from the edge of the haystack (`s`)
+#
+# `search_forward` ignores `s` bytes from the head of the haystack and
+# `search_backward` does from the tail of it. The `s` argument must be
+# nonnegative, but it is allowed to be larger than the length of `b`. The
+# functions return a zero-based offset of the matching position if any matching
+# position is found. Thus, the caller will need to add `firstindex(b)` to the
+# returned value in order to get the actual index. If there is no matching,
+# they return a negative value (-1).
+
 const AVX2 = Ref(BinaryPlatforms.CPUID.test_cpu_feature(BinaryPlatforms.CPUID.JL_X86_avx2))
 
 use_avx2() = AVX2[]
@@ -221,7 +236,6 @@ end
 # SIMD-friendly algorithms for substring searching, Wojciech Muła
 # http://0x80.pl/articles/simd-strfind.html
 
-# a: needle, b: haystack, s: # of bytes ignored from the head of the haystack (nonnegative)
 function search_forward(a::MemoryView, b::MemoryView, s::Int)
     m = length(a)
     n = length(b) - s
@@ -318,7 +332,6 @@ function search_forward(a::MemoryView, b::MemoryView, s::Int)
     end
 end
 
-# a: needle, b: haystack, s: # of bytes ignored from the tail of the haystack (nonnegative)
 function search_backward(a::MemoryView, b::MemoryView, s::Int)
     m = length(a)
     n = length(b) - s

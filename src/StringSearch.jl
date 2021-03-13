@@ -66,7 +66,9 @@ end
 
 const Str = Union{String,SubString{String}}
 
-function findnext(pred::Fix2{<:Union{typeof(isequal),typeof(==)},<:AbstractChar}, b::Str, i::Int)
+const Fix2Eq{T} = Fix2{<:Union{typeof(isequal),typeof(==)},T}
+
+function findnext(pred::Fix2Eq{<:AbstractChar}, b::Str, i::Int)
     i = max(i, firstindex(b))
     a = pred.x
     probe = first_utf8_byte(a)
@@ -88,7 +90,29 @@ function findnext(a::Str, b::Str, i::Int)
     return offset ≥ 0 ? (offset+1:offset+lastindex(a)) : nothing
 end
 
-function findprev(pred::Fix2{<:Union{typeof(isequal),typeof(==)},<:AbstractChar}, b::Str, i::Int)
+function findnext(pred::Fix2Eq{<:Union{Int8,UInt8}}, b::Vector{<:Union{Int8,UInt8}}, i::Int)
+    a = pred.x
+    typemin(eltype(b)) ≤ a ≤ typemax(eltype(b)) || return nothing
+    i = max(i, firstindex(b))
+    @inbounds while true
+        offset = search_forward(a % UInt8, b, i - 1)
+        if offset < 0
+            return nothing
+        elseif pred(b[offset+1])
+            return offset + 1
+        else
+            i += 1
+        end
+    end
+end
+
+function findnext(a::Vector{T}, b::Vector{T}, i::Int) where T <: Union{Int8,UInt8}
+    i = max(i, firstindex(b))
+    offset = search_forward(a, b, i - 1)
+    return offset ≥ 0 ? (offset+1:offset+lastindex(a)) : nothing
+end
+
+function findprev(pred::Fix2Eq{<:AbstractChar}, b::Str, i::Int)
     i < 0 && return nothing
     n = ncodeunits(b)
     i = nextind(b, min(i, n))
@@ -106,10 +130,34 @@ function findprev(pred::Fix2{<:Union{typeof(isequal),typeof(==)},<:AbstractChar}
     end
 end
 
+function findprev(pred::Fix2Eq{<:Union{Int8,UInt8}}, b::Vector{<:Union{Int8,UInt8}}, i::Int)
+    a = pred.x
+    typemin(eltype(b)) ≤ a ≤ typemax(eltype(b)) || return nothing
+    n = length(b)
+    i = min(i, lastindex(b))
+    @inbounds while true
+        offset = search_backward(a % UInt8, b, n - i)
+        if offset < 0
+            return nothing
+        elseif pred(b[offset+1])
+            return offset + 1
+        else
+            i -= 1
+        end
+    end
+end
+
 function findprev(a::Str, b::Str, i::Int)
     i < 0 && return nothing
     n = ncodeunits(b)
     offset = search_backward(a, b, n + 1 - nextind(b, min(i, n)))
+    return offset ≥ 0 ? (offset+1:offset+lastindex(a)) : nothing
+end
+
+function findprev(a::Vector{T}, b::Vector{T}, i::Int) where T <: Union{Int8,UInt8}
+    i < 0 && return nothing
+    n = length(b)
+    offset = search_backward(a, b, n - min(i, n))
     return offset ≥ 0 ? (offset+1:offset+lastindex(a)) : nothing
 end
 
@@ -128,6 +176,7 @@ Base.lastindex(mem::MemoryView) = mem.len
 Base.getindex(mem::MemoryView, i::Integer) = unsafe_load(mem.ptr + i - 1)
 
 MemoryView(s::Str) = MemoryView(pointer(s), sizeof(s))
+MemoryView(s::Vector{<:Union{Int8,UInt8}}) = MemoryView(pointer(s), sizeof(s))
 
 
 # Search Functions
@@ -145,6 +194,16 @@ search_forward(a::Str, b::Str, s::Int) =
 search_backward(a::UInt8, b::Str, s::Int) =
     GC.@preserve b search_backward(a, MemoryView(b), s)
 search_backward(a::Str, b::Str, s::Int) =
+    GC.@preserve a b search_backward(MemoryView(a), MemoryView(b), s)
+
+search_forward(a::T, b::Vector{T}, s::Int) where T <: Union{Int8,UInt8} =
+    GC.@preserve b search_forward(a, MemoryView(b), s)
+search_forward(a::Vector{T}, b::Vector{T}, s::Int) where T<: Union{Int8,UInt8} =
+    GC.@preserve a b search_forward(MemoryView(a), MemoryView(b), s)
+
+search_backward(a::T, b::Vector{T}, s::Int) where T <: Union{Int8,UInt8} =
+    GC.@preserve b search_backward(a, MemoryView(b), s)
+search_backward(a::Vector{T}, b::Vector{T}, s::Int) where T<: Union{Int8,UInt8} =
     GC.@preserve a b search_backward(MemoryView(a), MemoryView(b), s)
 
 function search_forward(a::UInt8, b::MemoryView, s::Int)

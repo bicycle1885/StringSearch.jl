@@ -159,6 +159,24 @@ using Test
         @test findprev(a, b, i) == ifelse(iseven(i), i-1:i, i-2:i-1)
     end
     @test findprev(a, b, 1) === nothing
+
+    b = [0x00, 0x01, 0x02, 0x03]
+    @test findfirst(isequal(0x00), b) == 1
+    @test findfirst(isequal(0x03), b) == 4
+    @test findfirst([0x00, 0x01, 0x02], b) == 1:3
+    @test findfirst([0x01, 0x02, 0x03], b) == 2:4
+    @test findlast(isequal(0x00), b) == 1
+    @test findlast(isequal(0x03), b) == 4
+    @test findlast([0x00, 0x01, 0x02], b) == 1:3
+    @test findlast([0x01, 0x02, 0x03], b) == 2:4
+
+    b = [0xff] 
+    @test findfirst(isequal(Int8(-1)), b) === nothing
+    @test findlast(isequal(Int8(-1)), b) === nothing
+
+    b = [Int8(-1)]
+    @test findfirst(isequal(0xff), b) === nothing
+    @test findlast(isequal(0xff), b) === nothing
 end
 
 @testset "Base tests" begin

@@ -2,6 +2,54 @@ module StringSearch
 
 using Base: Fix2, BinaryPlatforms, first_utf8_byte
 
+
+# Generic methods
+# ---------------
+
+in(c::AbstractChar, s::AbstractString) = findfirst(isequal(c), s) !== nothing
+in(::AbstractString, ::AbstractString) = error("use occursin(x, y) for string containment")
+
+findfirst(a, b) = findnext(a, b, firstindex(b))
+findlast(a, b) = findprev(a, b, lastindex(b))
+
+findnext(a, b, i::Integer) = findnext(a, b, Int(i))
+findprev(a, b, i::Integer) = findprev(a, b, Int(i))
+
+function findnext(p::Function, b::AbstractString, i::Int)
+    i = max(i, firstindex(b))
+    last = lastindex(b)
+    @inbounds while i ≤ last
+        p(b[i]) && return i
+        i = nextind(b, i)
+    end
+    return nothing
+end
+
+function findprev(p::Function, b::AbstractString, i::Int)
+    i = min(i, lastindex(b))
+    first = firstindex(b)
+    @inbounds while i ≥ first
+        p(b[i]) && return i
+        i = prevind(b, i)
+    end
+    return nothing
+end
+
+findnext(c::AbstractChar, b::AbstractString, i::Int) = findnext(==(c), b, i)
+findprev(c::AbstractChar, b::AbstractString, i::Int) = findprev(==(c), b, i)
+
+#= TODO
+function findnext(a::AbstractString, b::AbstractString, i::Int)
+end
+
+function findprev(a::AbstractString, b::AbstractString, i::Int)
+end
+=#
+
+
+# Specialized methods
+# -------------------
+
 const Str = Union{String,SubString{String}}
 
 function findnext(pred::Fix2{<:Union{typeof(isequal),typeof(==)},<:AbstractChar}, b::Str, i::Int)
@@ -20,17 +68,11 @@ function findnext(pred::Fix2{<:Union{typeof(isequal),typeof(==)},<:AbstractChar}
     end
 end
 
-findnext(c::AbstractChar, b::Str, i::Int) = findnext(==(c), b, i)
-
 function findnext(a::Str, b::Str, i::Int)
     i = max(i, firstindex(b))
     offset = search_forward(a, b, i - 1)
     return offset ≥ 0 ? (offset+1:offset+lastindex(a)) : nothing
 end
-
-findnext(a::Str, b::Str, i::Integer) = findnext(a, b, Int(i))
-
-findfirst(a, b) = findnext(a, b, firstindex(b))
 
 function findprev(pred::Fix2{<:Union{typeof(isequal),typeof(==)},<:AbstractChar}, b::Str, i::Int)
     i < 0 && return nothing
@@ -50,18 +92,12 @@ function findprev(pred::Fix2{<:Union{typeof(isequal),typeof(==)},<:AbstractChar}
     end
 end
 
-findprev(c::AbstractChar, b::Str, i::Int) = findprev(==(c), b, i)
-
 function findprev(a::Str, b::Str, i::Int)
     i < 0 && return nothing
     n = ncodeunits(b)
     offset = search_backward(a, b, n + 1 - nextind(b, min(i, n)))
     return offset ≥ 0 ? (offset+1:offset+lastindex(a)) : nothing
 end
-
-findprev(a::Str, b::Str, i::Integer) = findprev(a, b, Int(i))
-
-findlast(a, b) = findprev(a, b, lastindex(b))
 
 
 # MemoryView

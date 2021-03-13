@@ -57,6 +57,9 @@ end
 # short query only
 const short = "-short" ∈ ARGS
 
+# char query only
+const char = "-char" ∈ ARGS
+
 # quick benchmark
 if "-quick" ∈ ARGS
     BenchmarkTools.DEFAULT_PARAMETERS.samples = 1000
@@ -106,6 +109,7 @@ println()
 println("# findfirst/last for a very short string ($(sizeof(b)) bytes)")
 for a in ['a', 'd', "c", "ca", "cad", "cada", "cadab", "cadabr", "cadabra", "namnam"]
     short && sizeof(a) > 3 && continue
+    char && !(a isa Char) && continue
     if forward
         benchmark_findfirst(a, b)
     else
@@ -120,6 +124,7 @@ println()
 println("# findfirst/last for a short string ($(sizeof(b)) bytes)")
 for a in ['a', 'G', "a", "be", "the", "code", "Julia", "language", "installing", "Python"]
     short && sizeof(a) > 3 && continue
+    char && !(a isa Char) && continue
     if forward
         benchmark_findfirst(a, b)
     else
@@ -133,6 +138,7 @@ if isfile("base.txt.zst")
     println("# countall for a long string ($(sizeof(b)) bytes)")
     for a in ['.', '=', ".", "if", "for", "struct", "function", "baremodule", "abracadabra", "https://julialang.org/license"]
         short && sizeof(a) > 3 && continue
+        char && !(a isa Char) && continue
         benchmark_countall(a, b)
     end
 end
@@ -143,6 +149,7 @@ if isfile("chr1.txt.zst")
     println("# countall for a low-complexity string ($(sizeof(b)) bytes)")
     for a in ['A', 'N', "A", "AAA", "TATA", "GAATTC", "CGTACGTAC", "GTTTTCCCCTC", "CCCCCCCCCCCCC", "XXXXXXXXXXXXXXXX"]
         short && sizeof(a) > 3 && continue
+        char && !(a isa Char) && continue
         benchmark_countall(a, b)
     end
 end

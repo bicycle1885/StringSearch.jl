@@ -6,19 +6,21 @@ using Base: Fix2, BinaryPlatforms, first_utf8_byte
 # Generic methods
 # ---------------
 
+const AbstractByteVector = AbstractVector{<:Union{Int8,UInt8}}
+
 in(c::AbstractChar, s::AbstractString) = findfirst(isequal(c), s) !== nothing
 in(::AbstractString, ::AbstractString) = error("use occursin(x, y) for string containment")
 
 findfirst(a, b) = findnext(a, b, firstindex(b))
 findlast(a, b) = findprev(a, b, lastindex(b))
 
-findnext(a::Union{Function,AbstractString,AbstractVector{<:Union{Int8,UInt8}}}, b::Union{AbstractString,AbstractVector{<:Union{Int8,UInt8}}}, i::Integer) = findnext(a, b, Int(i))
-findprev(a::Union{Function,AbstractString,AbstractVector{<:Union{Int8,UInt8}}}, b::Union{AbstractString,AbstractVector{<:Union{Int8,UInt8}}}, i::Integer) = findprev(a, b, Int(i))
+findnext(a::Union{Function,AbstractString,AbstractByteVector}, b::Union{AbstractString,AbstractByteVector}, i::Integer) = findnext(a, b, Int(i))
+findprev(a::Union{Function,AbstractString,AbstractByteVector}, b::Union{AbstractString,AbstractByteVector}, i::Integer) = findprev(a, b, Int(i))
 
-findnext(a::AbstractChar, b::AbstractString, i::Integer) = findprev(a, b, Int(i))
-findprev(a::AbstractChar, b::AbstractString, i::Integer) = findprev(a, b, Int(i))
+findnext(a::AbstractChar, b::AbstractString, i::Integer) = findnext(isequal(a), b, Int(i))
+findprev(a::AbstractChar, b::AbstractString, i::Integer) = findprev(isequal(a), b, Int(i))
 
-function findnext(p::Function, b::Union{AbstractString,AbstractVector{<:Union{Int8,UInt8}}}, i::Int)
+function findnext(p::Function, b::Union{AbstractString,AbstractByteVector}, i::Int)
     i = max(i, firstindex(b))
     last = lastindex(b)
     @inbounds while i ≤ last
@@ -28,7 +30,7 @@ function findnext(p::Function, b::Union{AbstractString,AbstractVector{<:Union{In
     return nothing
 end
 
-function findprev(p::Function, b::Union{AbstractString,AbstractVector{<:Union{Int8,UInt8}}}, i::Int)
+function findprev(p::Function, b::Union{AbstractString,AbstractByteVector}, i::Int)
     i = min(i, lastindex(b))
     first = firstindex(b)
     @inbounds while i ≥ first
@@ -37,9 +39,6 @@ function findprev(p::Function, b::Union{AbstractString,AbstractVector{<:Union{In
     end
     return nothing
 end
-
-findnext(c::AbstractChar, b::AbstractString, i::Int) = findnext(==(c), b, i)
-findprev(c::AbstractChar, b::AbstractString, i::Int) = findprev(==(c), b, i)
 
 function findnext(a::AbstractString, b::AbstractString, i::Int)
     i = max(i, firstindex(b))
@@ -63,13 +62,13 @@ function findprev(a::AbstractString, b::AbstractString, i::Int)
     return nothing
 end
 
-function findnext(a::AbstractVector{<:Union{Int8,UInt8}}, b::AbstractVector{<:Union{Int8,UInt8}}, i::Int)
+function findnext(a::AbstractByteVector, b::AbstractByteVector, i::Int)
     n = firstindex(b)
     offset = search_forward(a, b, max(i, n) - n)
     return offset ≥ 0 ? (offset+firstindex(a):offset+lastindex(a)) : nothing
 end
 
-function findprev(a::AbstractVector{<:Union{Int8,UInt8}}, b::AbstractVector{<:Union{Int8,UInt8}}, i::Int)
+function findprev(a::AbstractByteVector, b::AbstractByteVector, i::Int)
     n = lastindex(b)
     offset = search_backward(a, b, n - min(i, n))
     return offset ≥ 0 ? (offset+firstindex(a):offset+lastindex(a)) : nothing
@@ -413,7 +412,7 @@ function search_backward(a::MemoryView, b::MemoryView, s::Int)
     end
 end
 
-function search_forward(a::AbstractVector{<:Union{Int8,UInt8}}, b::AbstractVector{<:Union{Int8,UInt8}}, s::Int)
+function search_forward(a::AbstractByteVector, b::AbstractByteVector, s::Int)
     m = length(a)
     n = length(b) - s
     if m > n
@@ -462,7 +461,7 @@ function search_forward(a::AbstractVector{<:Union{Int8,UInt8}}, b::AbstractVecto
     return -1
 end
 
-function search_backward(a::AbstractVector{<:Union{Int8,UInt8}}, b::AbstractVector{<:Union{Int8,UInt8}}, s::Int)
+function search_backward(a::AbstractByteVector, b::AbstractByteVector, s::Int)
     m = length(a)
     n = length(b) - s
     if m > n

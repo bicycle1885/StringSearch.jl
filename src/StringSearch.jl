@@ -245,12 +245,24 @@ function search_backward(a::MemoryView, b::MemoryView, s::Int)
                 end
                 mask ⊻= 1 << i
             end
-            step = min(16, p - b.ptr)
-            if step == 0
-                return -1
+            rem = p - b.ptr
+            if rem < 16
+                p -= rem
+                break
             end
-            p -= step
+            p -= 16
         end
+        S = loadu_si128(p)
+        T = loadu_si128(p + d)
+        mask = movemask_epi8(and_si128(cmpeq_epi8(S, F), cmpeq_epi8(T, L)))
+        while mask ≠ 0
+            i = sizeof(mask) * 8 - leading_zeros(mask) - 1
+            if memcmp(a.ptr + 1, p + i + 1, m - 2) == 0
+                return Int(p + i - b.ptr)
+            end
+            mask ⊻=1 << i
+        end
+        return -1
     else
         # use 32-byte registers
         F = set1_epi8_256(a[begin])

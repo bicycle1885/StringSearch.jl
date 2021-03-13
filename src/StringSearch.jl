@@ -40,9 +40,10 @@ findprev(c::AbstractChar, b::AbstractString, i::Int) = findprev(==(c), b, i)
 
 function findnext(a::AbstractString, b::AbstractString, i::Int)
     i = max(i, firstindex(b))
+    isempty(a) && return i:i-1
     last = lastindex(b)
     while i ≤ last
-        startswith(SubString(b, i), a) && return i:i+lastindex(a)-1
+        startswith(SubString(b, i), a) && return i:nextind(b, i, length(a) - 1)
         i = nextind(b, i)
     end
     return nothing
@@ -50,9 +51,10 @@ end
 
 function findprev(a::AbstractString, b::AbstractString, i::Int)
     i = min(i, lastindex(b))
+    isempty(a) && return i+1:i
     first = firstindex(b)
     while i ≥ first
-        endswith(SubString(b, first, i), a) && return i-lastindex(a)+1:i
+        endswith(SubString(b, first, i), a) && return prevind(b, i, length(a) - 1):i
         i = prevind(b, i)
     end
     return nothing

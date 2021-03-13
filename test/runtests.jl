@@ -18,6 +18,7 @@ using Test
     @test invoke(findnext, Tuple{Function, AbstractString, Int}, isequal('b'), "abc", 1) == 2
     @test invoke(findnext, Tuple{Function, AbstractString, Int}, isequal('z'), "abc", 1) === nothing
 
+    @test findfirst(GenericString(""), GenericString(b)) == 1:0
     @test findfirst(GenericString("ab"), GenericString(b)) == 1:2
     @test findfirst(GenericString("abra"), GenericString(b)) == 1:4
     @test findfirst(GenericString("cad"), GenericString(b)) == 5:7
@@ -47,6 +48,7 @@ using Test
     @test invoke(findprev, Tuple{Function, AbstractString, Int}, isequal('b'), "abc", 3) == 2
     @test invoke(findprev, Tuple{Function, AbstractString, Int}, isequal('z'), "abc", 3) === nothing
 
+    @test findlast(GenericString(""), GenericString(b)) == 11:10
     @test findlast(GenericString("ab"), GenericString(b)) == 8:9
     @test findlast(GenericString("abra"), GenericString(b)) == 8:11
     @test findlast(GenericString("cad"), GenericString(b)) == 5:7

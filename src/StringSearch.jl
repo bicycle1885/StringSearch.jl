@@ -121,12 +121,6 @@ function findnext(pred::Fix2Eq{<:Union{Int8,UInt8}}, b::Vector{<:Union{Int8,UInt
     end
 end
 
-function findnext(a::Vector{T}, b::Vector{T}, i::Int) where T <: Union{Int8,UInt8}
-    i = max(i, firstindex(b))
-    offset = search_forward(a, b, i - 1)
-    return offset ≥ 0 ? (offset+1:offset+lastindex(a)) : nothing
-end
-
 function findprev(pred::Fix2Eq{<:AbstractChar}, b::Str, i::Int)
     i < 0 && return nothing
     n = ncodeunits(b)
@@ -166,13 +160,6 @@ function findprev(a::Str, b::Str, i::Int)
     i < 0 && return nothing
     n = ncodeunits(b)
     offset = search_backward(a, b, n + 1 - nextind(b, min(i, n)))
-    return offset ≥ 0 ? (offset+1:offset+lastindex(a)) : nothing
-end
-
-function findprev(a::Vector{T}, b::Vector{T}, i::Int) where T <: Union{Int8,UInt8}
-    i < 0 && return nothing
-    n = length(b)
-    offset = search_backward(a, b, n - min(i, n))
     return offset ≥ 0 ? (offset+1:offset+lastindex(a)) : nothing
 end
 

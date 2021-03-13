@@ -177,6 +177,14 @@ using Test
     b = [Int8(-1)]
     @test findfirst(isequal(0xff), b) === nothing
     @test findlast(isequal(0xff), b) === nothing
+
+    f0(x) = isequal(x, 0x00)
+    f4(x) = isequal(x, 0x04)
+    b = [0x00, 0x01, 0x02, 0x03]
+    @test findfirst(f0, b) == 1
+    @test findfirst(f4, b) === nothing
+    @test findlast(f0, b) == 1
+    @test findlast(f4, b) === nothing
 end
 
 @testset "Base tests" begin

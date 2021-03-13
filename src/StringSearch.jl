@@ -12,10 +12,11 @@ in(::AbstractString, ::AbstractString) = error("use occursin(x, y) for string co
 findfirst(a, b) = findnext(a, b, firstindex(b))
 findlast(a, b) = findprev(a, b, lastindex(b))
 
+# This may cause infinite recursive calls and result in StackOverflowError.
 findnext(a, b, i::Integer) = findnext(a, b, Int(i))
 findprev(a, b, i::Integer) = findprev(a, b, Int(i))
 
-function findnext(p::Function, b::AbstractString, i::Int)
+function findnext(p::Function, b::Union{AbstractString,AbstractVector}, i::Int)
     i = max(i, firstindex(b))
     last = lastindex(b)
     @inbounds while i ≤ last
@@ -25,7 +26,7 @@ function findnext(p::Function, b::AbstractString, i::Int)
     return nothing
 end
 
-function findprev(p::Function, b::AbstractString, i::Int)
+function findprev(p::Function, b::Union{AbstractString,AbstractVector}, i::Int)
     i = min(i, lastindex(b))
     first = firstindex(b)
     @inbounds while i ≥ first

@@ -64,13 +64,13 @@ end
 function findnext(a::AbstractVector{<:Union{Int8,UInt8}}, b::AbstractVector{<:Union{Int8,UInt8}}, i::Int)
     n = firstindex(b)
     offset = search_forward(a, b, max(i, n) - n)
-    return offset ≥ 0 ? (offset+1:offset+lastindex(a)) : nothing
+    return offset ≥ 0 ? (offset+firstindex(a):offset+lastindex(a)) : nothing
 end
 
 function findprev(a::AbstractVector{<:Union{Int8,UInt8}}, b::AbstractVector{<:Union{Int8,UInt8}}, i::Int)
     n = lastindex(b)
     offset = search_backward(a, b, n - min(i, n))
-    return offset ≥ 0 ? (offset+1:offset+lastindex(a)) : nothing
+    return offset ≥ 0 ? (offset+firstindex(a):offset+lastindex(a)) : nothing
 end
 
 

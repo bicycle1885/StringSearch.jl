@@ -8,7 +8,7 @@ function findnext(pred::Fix2{<:Union{typeof(isequal),typeof(==)},<:AbstractChar}
     i = max(i, firstindex(b))
     a = pred.x
     probe = first_utf8_byte(a)
-    while true
+    @inbounds while true
         offset = search_forward(probe, b, i - 1)
         if offset < 0
             return nothing
@@ -38,7 +38,7 @@ function findprev(pred::Fix2{<:Union{typeof(isequal),typeof(==)},<:AbstractChar}
     i = nextind(b, min(i, n))
     a = pred.x
     probe = first_utf8_byte(a)
-    while true
+    @inbounds while true
         offset = search_backward(probe, b, n + 1 - i)
         if offset < 0
             return nothing

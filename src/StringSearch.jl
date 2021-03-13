@@ -61,6 +61,18 @@ function findprev(a::AbstractString, b::AbstractString, i::Int)
     return nothing
 end
 
+function findnext(a::AbstractVector{<:Union{Int8,UInt8}}, b::AbstractVector{<:Union{Int8,UInt8}}, i::Int)
+    n = firstindex(b)
+    offset = search_forward(a, b, max(i, n) - n)
+    return offset ≥ 0 ? (offset+1:offset+lastindex(a)) : nothing
+end
+
+function findprev(a::AbstractVector{<:Union{Int8,UInt8}}, b::AbstractVector{<:Union{Int8,UInt8}}, i::Int)
+    n = lastindex(b)
+    offset = search_backward(a, b, n - min(i, n))
+    return offset ≥ 0 ? (offset+1:offset+lastindex(a)) : nothing
+end
+
 
 # Specialized methods
 # -------------------
@@ -411,6 +423,108 @@ function search_backward(a::MemoryView, b::MemoryView, s::Int)
         return -1
     end
 end
+
+function search_forward(a::AbstractVector{<:Union{Int8,UInt8}}, b::AbstractVector{<:Union{Int8,UInt8}}, s::Int)
+    m = length(a)
+    n = length(b) - s
+    if m > n
+        return -1
+    elseif m == 0
+        return s
+    end
+
+    # preprocess
+    a_end = a[end]
+    filter = bloom_filter_bit(a_end)
+    displacement = m
+    for i in firstindex(a):lastindex(a)-1
+        filter |= bloom_filter_bit(a[i])
+        if a[i] == a_end
+            displacement = lastindex(a) - i
+        end
+    end
+
+    # main loop
+    last = lastindex(b)
+    p = firstindex(b) + s
+    while p + m - 1 ≤ last
+        if a_end == b[p+m-1]
+            # the last byte is matching
+            i = firstindex(a)
+            while i < lastindex(a)
+                a[i] == b[p+i-1] || break
+                i += 1
+            end
+            if i == lastindex(a)
+                return p - firstindex(b)
+            elseif p + m ≤ last && !mayhave(filter, b[p+m])
+                p += m + 1
+            else
+                p += displacement
+            end
+        else
+            if p + m ≤ last && !mayhave(filter, b[p+m])
+                p += m +  1
+            else
+                p += 1
+            end
+        end
+    end
+    return -1
+end
+
+function search_backward(a::AbstractVector{<:Union{Int8,UInt8}}, b::AbstractVector{<:Union{Int8,UInt8}}, s::Int)
+    m = length(a)
+    n = length(b) - s
+    if m > n
+        return -1
+    elseif m == 0
+        return s
+    end
+
+    # preprocess
+    a_begin = a[begin]
+    filter = bloom_filter_bit(a_begin)
+    displacement = m
+    for i in lastindex(a):-1:firstindex(a)+1
+        filter |= bloom_filter_bit(a[i])
+        if a[i] == a_begin
+            displacement = firstindex(a) - i
+        end
+    end
+
+    # main loop
+    first = firstindex(b)
+    p = lastindex(b) + 1 - (m + s)
+    while p ≥ firstindex(b)
+        if a_begin == b[p]
+            # the first byte is matching
+            i = firstindex(a) + 1
+            while i ≤ lastindex(a)
+                a[i] == b[p+i-1] || break
+                i += 1
+            end
+            if i > lastindex(a)
+                return p - firstindex(b)
+            elseif p - 1 ≥ first && !mayhave(filter, b[p-1])
+                p -= m + 1
+            else
+                p -= displacement
+            end
+        else
+            if p - 1 ≥ first && !mayhave(filter, b[p-1])
+                p -= m + 1
+            else
+                p -= 1
+            end
+        end
+    end
+    return -1
+end
+
+# Bloom filter using a 64-bit integer
+bloom_filter_bit(x::Union{Int8,UInt8}) = UInt64(1) << (x & 63)
+mayhave(filter::UInt64, x::Union{Int8,UInt8}) = filter & bloom_filter_bit(x) ≠ 0
 
 
 # Low-level operations

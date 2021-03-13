@@ -185,6 +185,16 @@ using Test
     @test findfirst(f4, b) === nothing
     @test findlast(f0, b) == 1
     @test findlast(f4, b) === nothing
+
+    b = GenericArray([0x00, 0x01, 0x02, 0x03])
+    @test findfirst([0x00], b) == 1:1
+    @test findfirst([0x03], b) == 4:4
+    @test findfirst([0x01, 0x02], b) == 2:3
+    @test findfirst([0x03, 0x04], b) === nothing
+    @test findlast([0x00], b) == 1:1
+    @test findlast([0x03], b) == 4:4
+    @test findlast([0x01, 0x02], b) == 2:3
+    @test findlast([0x03, 0x04], b) === nothing
 end
 
 @testset "Base tests" begin

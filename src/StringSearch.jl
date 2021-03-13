@@ -196,7 +196,7 @@ MemoryView(s::Vector{<:Union{Int8,UInt8}}) = MemoryView(pointer(s), sizeof(s))
 # functions return a zero-based offset of the matching position if any matching
 # position is found. Thus, the caller will need to add `firstindex(b)` to the
 # returned value in order to get the actual index. If there is no matching,
-# they return a negative value (-1).
+# they return a negative value (i.e., -1).
 
 const AVX2 = Ref(BinaryPlatforms.CPUID.test_cpu_feature(BinaryPlatforms.CPUID.JL_X86_avx2))
 

@@ -438,7 +438,7 @@ function search_forward(a::AbstractByteVector, b::AbstractByteVector, k::Int)
     a_end = a[end]
     filter = bloom_filter_bit(a_end)
     displacement = m
-    for i in firstindex(a):lastindex(a)-1
+    @inbounds for i in firstindex(a):lastindex(a)-1
         filter |= bloom_filter_bit(a[i])
         if a[i] == a_end
             displacement = lastindex(a) - i
@@ -448,7 +448,7 @@ function search_forward(a::AbstractByteVector, b::AbstractByteVector, k::Int)
     # main loop
     last = lastindex(b)
     p = firstindex(b) + k
-    while p + m - 1 ≤ last
+    @inbounds while p + m - 1 ≤ last
         if a_end == b[p+m-1]
             # the last byte is matching
             i = firstindex(a)
@@ -487,7 +487,7 @@ function search_backward(a::AbstractByteVector, b::AbstractByteVector, k::Int)
     a_begin = a[begin]
     filter = bloom_filter_bit(a_begin)
     displacement = m
-    for i in lastindex(a):-1:firstindex(a)+1
+    @inbounds for i in lastindex(a):-1:firstindex(a)+1
         filter |= bloom_filter_bit(a[i])
         if a[i] == a_begin
             displacement = firstindex(a) - i
@@ -497,15 +497,15 @@ function search_backward(a::AbstractByteVector, b::AbstractByteVector, k::Int)
     # main loop
     first = firstindex(b)
     p = lastindex(b) + 1 - (m + k)
-    while p ≥ first
+    @inbounds while p ≥ first
         if a_begin == b[p]
             # the first byte is matching
-            i = firstindex(a) + 1
-            while i ≤ lastindex(a)
+            i = lastindex(a)
+            while i > firstindex(a)
                 a[i] == b[p+i-1] || break
-                i += 1
+                i -= 1
             end
-            if i > lastindex(a)
+            if i == firstindex(a)
                 return p - first
             elseif p - 1 ≥ first && !mayhave(filter, b[p-1])
                 p -= m + 1

@@ -2,6 +2,10 @@ module StringSearch
 
 using Base: Fix2, BinaryPlatforms, first_utf8_byte
 
+const AVX2 = Ref(BinaryPlatforms.CPUID.test_cpu_feature(BinaryPlatforms.CPUID.JL_X86_avx2))
+
+use_avx2() = AVX2[]
+
 
 # Generic Methods
 # ---------------
@@ -14,14 +18,22 @@ in(::AbstractString, ::AbstractString) = error("use occursin(x, y) for string co
 occursin(b) = Fix2(occursin, b)
 occursin(a::Union{AbstractString,AbstractChar}, b::AbstractString) = findfirst(a, b) !== nothing
 
-findfirst(a, b) = findnext(a, b, firstindex(b))
-findlast(a, b) = findprev(a, b, lastindex(b))
+for (Ta, Tb) in [
+        (Function, Union{AbstractString,AbstractByteVector}),
+        (AbstractChar, AbstractString),
+        (AbstractString, AbstractString),
+        (AbstractByteVector, AbstractByteVector),
+    ]
+    @eval begin
+        findfirst(a::$Ta, b::$Tb) = findnext(a, b, firstindex(b))
+        findlast(a::$Ta, b::$Tb) = findprev(a, b, lastindex(b))
+        findnext(a::$Ta, b::$Tb, i::Integer) = findnext(a, b, Int(i))
+        findprev(a::$Ta, b::$Tb, i::Integer) = findprev(a, b, Int(i))
+    end
+end
 
-findnext(a::Union{Function,AbstractString,AbstractByteVector}, b::Union{AbstractString,AbstractByteVector}, i::Integer) = findnext(a, b, Int(i))
-findprev(a::Union{Function,AbstractString,AbstractByteVector}, b::Union{AbstractString,AbstractByteVector}, i::Integer) = findprev(a, b, Int(i))
-
-findnext(a::AbstractChar, b::AbstractString, i::Integer) = findnext(isequal(a), b, Int(i))
-findprev(a::AbstractChar, b::AbstractString, i::Integer) = findprev(isequal(a), b, Int(i))
+findnext(a::AbstractChar, b::AbstractString, i::Int) = findnext(isequal(a), b, i)
+findprev(a::AbstractChar, b::AbstractString, i::Int) = findprev(isequal(a), b, i)
 
 function findnext(p::Function, b::Union{AbstractString,AbstractByteVector}, i::Int)
     i = max(i, firstindex(b))
@@ -200,10 +212,6 @@ MemoryView(s::Vector{<:Union{Int8,UInt8}}) = MemoryView(pointer(s), sizeof(s))
 # position is found. Thus, the caller will need to add `firstindex(b)` to the
 # returned value in order to get the actual index. If there is no matching,
 # they return a negative value (i.e., -1).
-
-const AVX2 = Ref(BinaryPlatforms.CPUID.test_cpu_feature(BinaryPlatforms.CPUID.JL_X86_avx2))
-
-use_avx2() = AVX2[]
 
 search_forward(a::UInt8, b::Str, k::Int) =
     GC.@preserve b search_forward(a, MemoryView(b), k)

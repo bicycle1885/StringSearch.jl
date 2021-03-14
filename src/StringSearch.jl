@@ -497,7 +497,7 @@ function search_backward(a::AbstractByteVector, b::AbstractByteVector, k::Int)
     # main loop
     first = firstindex(b)
     p = lastindex(b) + 1 - (m + k)
-    while p ≥ firstindex(b)
+    while p ≥ first
         if a_begin == b[p]
             # the first byte is matching
             i = firstindex(a) + 1
@@ -506,7 +506,7 @@ function search_backward(a::AbstractByteVector, b::AbstractByteVector, k::Int)
                 i += 1
             end
             if i > lastindex(a)
-                return p - firstindex(b)
+                return p - first
             elseif p - 1 ≥ first && !mayhave(filter, b[p-1])
                 p -= m + 1
             else

@@ -182,10 +182,11 @@ end
 # ----------
 
 # NOTE: You may need to GC.@preserve the referenced object.
-struct MemoryView
+struct MemoryView <: AbstractVector{UInt8}
     ptr::Ptr{UInt8}
     len::Int
 end
+
 Base.length(mem::MemoryView) = mem.len
 Base.firstindex(mem::MemoryView) = 1
 Base.lastindex(mem::MemoryView) = mem.len

@@ -1,4 +1,4 @@
-using StringSearch: StringSearch, findfirst, findnext, findlast, findprev
+using StringSearch: StringSearch, findfirst, findnext, findlast, findprev, occursin
 using Test
 
 @testset "StringSearch.jl" begin
@@ -195,6 +195,14 @@ using Test
     @test findlast([0x03], b) == 4:4
     @test findlast([0x01, 0x02], b) == 2:3
     @test findlast([0x03, 0x04], b) === nothing
+
+    b = "abracadabra"
+    @test occursin('a', b)
+    @test occursin('r', b)
+    @test !occursin('z', b)
+    @test occursin("abra", b)
+    @test occursin("cad", b)
+    @test !occursin("cas", b)
 end
 
 @testset "Base tests" begin

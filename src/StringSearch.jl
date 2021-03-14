@@ -8,8 +8,11 @@ using Base: Fix2, BinaryPlatforms, first_utf8_byte
 
 const AbstractByteVector = AbstractVector{<:Union{Int8,UInt8}}
 
-in(c::AbstractChar, s::AbstractString) = findfirst(isequal(c), s) !== nothing
+in(a::AbstractChar, b::AbstractString) = findfirst(isequal(a), b) !== nothing
 in(::AbstractString, ::AbstractString) = error("use occursin(x, y) for string containment")
+
+occursin(b) = Fix2(occursin, b)
+occursin(a::Union{AbstractString,AbstractChar}, b::AbstractString) = findfirst(a, b) !== nothing
 
 findfirst(a, b) = findnext(a, b, firstindex(b))
 findlast(a, b) = findprev(a, b, lastindex(b))

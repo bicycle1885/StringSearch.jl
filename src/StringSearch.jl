@@ -26,7 +26,7 @@ for (Ta, Tb) in [
     ]
     @eval begin
         findfirst(a::$Ta, b::$Tb) = findnext(a, b, firstindex(b))
-        findlast(a::$Ta, b::$Tb) = findprev(a, b, lastindex(b))
+        findlast(a::$Ta, b::$Tb) = findprev(a, b, b isa AbstractString ? ncodeunits(b) : lastindex(b))
         findnext(a::$Ta, b::$Tb, i::Integer) = findnext(a, b, Int(i))
         findprev(a::$Ta, b::$Tb, i::Integer) = findprev(a, b, Int(i))
     end
@@ -56,25 +56,54 @@ function findprev(p::Function, b::Union{AbstractString,AbstractByteVector}, i::I
 end
 
 function findnext(a::AbstractString, b::AbstractString, i::Int)
-    i = max(i, firstindex(b))
+    n = ncodeunits(b)
+    i > n + 1 && return nothing
+    i = max(i, 1)
+    # 1 ≤ i ≤ n + 1
+    if i ≠ thisind(b, i)
+        i = nextind(b, i)  # align index
+    end
     isempty(a) && return i:i-1
-    last = lastindex(b)
-    while i ≤ last
-        startswith(SubString(b, i), a) && return i:nextind(b, i, length(a) - 1)
+    while true
+        if startswith(@view(b[i:end]), a)
+            if codeunit(a) == codeunit(b)
+                return i:i+ncodeunits(a)-1
+            else
+                return i:nextind(b, i, length(a) - 1)
+            end
+        elseif i ≥ n
+            return nothing
+        end
         i = nextind(b, i)
     end
-    return nothing
 end
 
 function findprev(a::AbstractString, b::AbstractString, i::Int)
-    i = min(i, lastindex(b))
-    isempty(a) && return i+1:i
-    first = firstindex(b)
-    while i ≥ first
-        endswith(SubString(b, first, i), a) && return prevind(b, i, length(a) - 1):i
+    i < 0 && return nothing
+    n = ncodeunits(b)
+    i = min(i, n)
+    # 0 ≤ i ≤ n
+    if isempty(a)
+        if thisind(b, i + 1) == i + 1
+            return i+1:i
+        else
+            i = thisind(b, i)
+            return i:i-1
+        end
+    end
+    i = thisind(b, i)  # align index
+    while true
+        if endswith(@view(b[begin:i]), a)
+            if codeunit(a) == codeunit(b)
+                return nextind(b, i)-ncodeunits(a):i
+            else
+                return prevind(b, i, length(a) - 1):i
+            end
+        elseif i ≤ 1
+            return nothing
+        end
         i = prevind(b, i)
     end
-    return nothing
 end
 
 function findnext(a::AbstractByteVector, b::AbstractByteVector, i::Int)

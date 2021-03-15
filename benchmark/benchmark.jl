@@ -18,7 +18,7 @@ function report(a, ss, base, result)
     t_ss = minimum(ss).time
     t_base = minimum(base).time
     t_ratio = @sprintf "x%.2f" t_ss \ t_base
-    @printf "%18s  %8s  %8s  %8s  %8s\n" repr(a) time(t_ss) time(t_base) t_ratio repr(result)
+    @printf "%20s  %8s  %8s  %8s  %8s\n" repr(a) time(t_ss) time(t_base) t_ratio repr(result)
 end
 
 const B = Base
@@ -102,12 +102,25 @@ function benchmark_countall(a, b)
     report(a, ss, base, countall(sfind, a, b))
 end
 
-@printf "%18s  %8s  %8s  %8s  %8s\n" "Query" "SS" "Base" "Ratio" "Result"
+@printf "%20s  %8s  %8s  %8s  %8s\n" "Query" "SS" "Base" "Ratio" "Result"
 
 b = "abracadabra"
 println()
 println("# findfirst/last for a very short string ($(sizeof(b)) bytes)")
 for a in ['a', 'd', "c", "ca", "cad", "cada", "cadab", "cadabr", "cadabra", "namnam"]
+    short && sizeof(a) > 3 && continue
+    char && !(a isa Char) && continue
+    if forward
+        benchmark_findfirst(a, b)
+    else
+        benchmark_findlast(a, b)
+    end
+end
+
+b = "∀ ε > 0, ∃ δ > 0: |x-y| < δ ⇒ |f(x)-f(y)| < ε"
+println()
+println("# findfirst/last for a short non-ASCII string ($(sizeof(b)) bytes)")
+for a in ['0', '∃', "∃", "0,", "x-y", " < ε", "⇒ |f(x)-f(y)| < ε", "αβγ"]
     short && sizeof(a) > 3 && continue
     char && !(a isa Char) && continue
     if forward

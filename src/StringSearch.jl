@@ -144,6 +144,13 @@ end
 
 function findnext(a::Str, b::Str, i::Int)
     i = max(i, firstindex(b))
+    if isempty(a)
+        i > ncodeunits(b) + 1 && return nothing
+        if i ≠ thisind(b, i)
+            i = nextind(b, i)
+        end
+        return i:i-1
+    end
     offset = search_forward(a, b, i - 1)
     return offset ≥ 0 ? (offset+1:offset+lastindex(a)) : nothing
 end
@@ -202,7 +209,16 @@ end
 function findprev(a::Str, b::Str, i::Int)
     i < 0 && return nothing
     n = ncodeunits(b)
-    offset = search_backward(a, b, n + 1 - nextind(b, min(i, n)))
+    i = min(i, n)
+    if isempty(a)
+        if thisind(b, i + 1) == i + 1
+            return i+1:i
+        else
+            i = thisind(b, i)
+            return i:i-1
+        end
+    end
+    offset = search_backward(a, b, n + 1 - nextind(b, i))
     return offset ≥ 0 ? (offset+1:offset+lastindex(a)) : nothing
 end
 

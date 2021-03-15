@@ -144,7 +144,50 @@ using Test
     @test findnext("", "a", 2) === 2:1
     @test findnext("", "a", 3) === nothing
 
-    @test findlast("", "a") === 1:0
+    @test findlast("", "a") === 2:1
+
+    for b in ["αβ", GenericString("αβ")]  # 4 bytes in UTF-8
+        @test findnext("", b, -1) === 1:0
+        @test findnext("", b, 0) === 1:0
+        @test findnext("", b, 1) === 1:0
+        @test findnext("", b, 2) === 3:2
+        @test findnext("", b, 3) === 3:2
+        @test findnext("", b, 4) === 5:4
+        @test findnext("", b, 5) === 5:4
+        @test findnext("", b, 6) === nothing
+        @test findprev("", b, -1) === nothing
+        @test findprev("", b, 0) === 1:0
+        @test findprev("", b, 1) === 1:0
+        @test findprev("", b, 2) === 3:2
+        @test findprev("", b, 3) === 3:2
+        @test findprev("", b, 4) === 5:4
+        @test findprev("", b, 5) === 5:4
+        @test findprev("", b, 6) === 5:4
+        @test findfirst("", b) === 1:0
+        @test findlast("", b) === 5:4
+    end
+
+    function findall_forward(a, b)
+        rs = UnitRange{Int}[]
+        r = findfirst(a, b)
+        while r !== nothing
+            push!(rs, r)
+            r = findnext(a, b, first(r) + 1)
+        end
+        return rs
+    end
+    function findall_backward(a, b)
+        rs = UnitRange{Int}[]
+        r = findlast(a, b)
+        while r !== nothing
+            push!(rs, r)
+            r = findprev(a, b, last(r) - 1)
+        end
+        return rs
+    end
+    rsf = findall_forward("", "αβγ")
+    rsb = reverse(findall_backward("", "αβγ"))
+    @test length(rsf) == length(rsb) && all(r1 === r2 for (r1, r2) in zip(rsf, rsb))
 
     @test findnext("≠", "≠    ", 2) === nothing
     @test findnext(" ≠", "≠    ", 2) === nothing

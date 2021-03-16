@@ -56,14 +56,13 @@ function findprev(p::Function, b::Union{AbstractString,AbstractByteVector}, i::I
 end
 
 function findnext(a::AbstractString, b::AbstractString, i::Int)
+    isempty(a) && return emptymatchnext(b, i)
     n = ncodeunits(b)
-    i > n + 1 && return nothing
+    i > n && return nothing
     i = max(i, 1)
-    # 1 ≤ i ≤ n + 1
     if i ≠ thisind(b, i)
         i = nextind(b, i)  # align index
     end
-    isempty(a) && return i:i-1
     while true
         if startswith(@view(b[i:end]), a)
             if codeunit(a) == codeunit(b)
@@ -79,18 +78,10 @@ function findnext(a::AbstractString, b::AbstractString, i::Int)
 end
 
 function findprev(a::AbstractString, b::AbstractString, i::Int)
-    i < 0 && return nothing
+    isempty(a) && return emptymatchprev(b, i)
+    i < 1 && return nothing
     n = ncodeunits(b)
     i = min(i, n)
-    # 0 ≤ i ≤ n
-    if isempty(a)
-        if thisind(b, i + 1) == i + 1
-            return i+1:i
-        else
-            i = thisind(b, i)
-            return i:i-1
-        end
-    end
     i = thisind(b, i)  # align index
     while true
         if endswith(@view(b[begin:i]), a)
@@ -118,6 +109,28 @@ function findprev(a::AbstractByteVector, b::AbstractByteVector, i::Int)
     return offset ≥ 0 ? (offset+firstindex(a):offset+lastindex(a)) : nothing
 end
 
+# zero-length matching
+function emptymatchnext(b::AbstractString, i::Int)
+    i = max(i, 1)
+    i > ncodeunits(b) + 1 && return nothing
+    if i ≠ thisind(b, i)
+        i = nextind(b, i)
+    end
+    return i:i-1
+end
+
+# zero-length matching
+function emptymatchprev(b::AbstractString, i::Int)
+    i < 0 && return nothing
+    i = min(i, ncodeunits(b))
+    if thisind(b, i + 1) == i + 1
+        return i+1:i
+    else
+        i = thisind(b, i)
+        return i:i-1
+    end
+end
+
 
 # Specialized Methods
 # -------------------
@@ -143,14 +156,8 @@ function findnext(pred::Fix2Eq{<:AbstractChar}, b::Str, i::Int)
 end
 
 function findnext(a::Str, b::Str, i::Int)
+    isempty(a) && return emptymatchnext(b, i)
     i = max(i, firstindex(b))
-    if isempty(a)
-        i > ncodeunits(b) + 1 && return nothing
-        if i ≠ thisind(b, i)
-            i = nextind(b, i)
-        end
-        return i:i-1
-    end
     offset = search_forward(a, b, i - 1)
     return offset ≥ 0 ? (offset+1:offset+lastindex(a)) : nothing
 end
@@ -207,17 +214,10 @@ function findprev(pred::Fix2Eq{<:Union{Int8,UInt8}}, b::Vector{<:Union{Int8,UInt
 end
 
 function findprev(a::Str, b::Str, i::Int)
-    i < 0 && return nothing
+    isempty(a) && return emptymatchprev(b, i)
+    i < 1 && return nothing
     n = ncodeunits(b)
     i = min(i, n)
-    if isempty(a)
-        if thisind(b, i + 1) == i + 1
-            return i+1:i
-        else
-            i = thisind(b, i)
-            return i:i-1
-        end
-    end
     offset = search_backward(a, b, n + 1 - nextind(b, i))
     return offset ≥ 0 ? (offset+1:offset+lastindex(a)) : nothing
 end
